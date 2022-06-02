@@ -1,14 +1,16 @@
 // Colors
-$label-colour: #bbb;
-$disabled-colour: #ddd;
-$toggle-colour: #2F855A;
+$label-colour: #666;
+$disabled-colour: #888;
+$toggle-colour: #2094fa;
 $white: #fff;
-$focus-color: #ff0;
+$focus-color: #080;
+$total-width: 68px;
 
 .toggle-switch {
   position: relative;
-  margin-right: 10px;
-  width: 75px;
+ // margin-right: 5px;
+  margin-left: 5px;
+  width: $total-width;
   display: inline-block;
   vertical-align: middle;
   -webkit-user-select: none;
@@ -45,17 +47,17 @@ $focus-color: #ff0;
       display: block;
       float: left;
       width: 50%;
-      height: 34px;
+      height: 30px;
       padding: 0;
-      line-height: 34px;
+      line-height: 30px;
       font-size: 14px;
       color: white;
-      font-weight: bold;
+     // font-weight: bold;
       box-sizing: border-box;
     }
     &:before {
       content: attr(data-yes);
-      text-transform: uppercase;
+     // text-transform: uppercase;
       padding-left: 10px;
       background-color: $toggle-colour;
       color: $white;
@@ -71,7 +73,7 @@ $focus-color: #ff0;
   }
   &-inner:after {
     content: attr(data-no);
-    text-transform: uppercase;
+  //  text-transform: uppercase;
     padding-right: 10px;
     background-color: $label-colour;
     color: $white;
@@ -80,14 +82,15 @@ $focus-color: #ff0;
   &-switch {
     display: block;
     width: 24px;
-    margin: 5px;
+    height: 24px;
+    margin: 3px;
     background: $white;
     position: absolute;
     top: 0;
     bottom: 0;
-    right: 40px;
+	right: $total-width - 30px;
     border: 0 solid $label-colour;
-    border-radius: 20px;
+    border-radius: 24px;
     transition: all 0.3s ease-in 0s;
   }
   &-checkbox:checked + &-label {

@@ -15,6 +15,7 @@ const ToggleSwitch = ({
   checked,
   onChange,
   optionLabels,
+  optionLength,
   small,
   disabled
 }) => {
@@ -24,7 +25,7 @@ const ToggleSwitch = ({
     e.preventDefault();
     onChange(!checked);
   }
-
+  
   return (
     <div className={"toggle-switch" + (small ? " small-switch" : "")}>
       <input
@@ -33,9 +34,9 @@ const ToggleSwitch = ({
         className="toggle-switch-checkbox"
         id={id}
         checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
+        onChange={(e) => onChange(id, e.target.checked)}
         disabled={disabled}
-      />
+		/>
       {id ? (
         <label
           className="toggle-switch-label"
@@ -51,7 +52,7 @@ const ToggleSwitch = ({
             }
             data-yes={optionLabels[0]}
             data-no={optionLabels[1]}
-            tabIndex={-1}
+			tabIndex={-1}
           />
           <span
             className={
@@ -69,7 +70,8 @@ const ToggleSwitch = ({
 
 // Set optionLabels for rendering.
 ToggleSwitch.defaultProps = {
-  optionLabels: ["Yes", "No"]
+  optionLabels: ["On", "Off"], 
+  optionLength: "75px"
 };
 
 ToggleSwitch.propTypes = {
@@ -78,6 +80,7 @@ ToggleSwitch.propTypes = {
   onChange: PropTypes.func.isRequired,
   name: PropTypes.string,
   optionLabels: PropTypes.array,
+  optionLength: PropTypes.string,
   small: PropTypes.bool,
   disabled: PropTypes.bool
 };
