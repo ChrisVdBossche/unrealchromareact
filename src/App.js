@@ -1,6 +1,7 @@
 import React, {useState, useEffect} from "react";
 import './App.css';
 import './Buttons.css';
+import './Sliders.css';
 import ToggleSwitch from './ToggleSwitch/ToggleSwitch';
 
 //==================================================================================================
@@ -15,16 +16,18 @@ import ToggleSwitch from './ToggleSwitch/ToggleSwitch';
 //==================================================================================================
                                                        
 //TODO: How many unreal servers can be used?
-const numUnreals = 3;
-
+const numUnreals = 2;
 //TODO: How many cameras in use for each unreal server? (1,2,3)
-const numCams = 3;
+const numCams = 2;
 
 var uStatus = new Array(numUnreals);	//unreal status
 var oldStatus = new Array(numUnreals);	//To avoid unneeded, blink-disturbing update of status widgets
 var uActive = new Array(numUnreals);	//unreal active or not
 var masterUnreal = 0; //No unreal as master yet
 var masterData;		//Remember data from master, to send to other unreals
+//Node.js server that translates unreal commands
+const nodeServerIP = "localhost";
+const nodeServerPort = 8800;
 
 //Amount of Unreal controlling widgets
 const numFloats = 23;
@@ -85,6 +88,49 @@ onInit();
 //====== Initialisations, called at startup/reload client ======
 function onInit() { 
 	console.log("Initializing...");
+//	console.log("This node.js Server: HostName =",location.hostname,", PortNr =",location.port); //Does not work in react!
+
+//TODO: Init minicolors
+
+	//Camera panel width, positions, visibility
+	const panels = document.getElementsByClassName("MainPanel");
+	for(var i = 0; i < panels.length; i++) {
+		switch(numCams) { //all panels width
+			case 1:
+				panels[i].style.width = '98%';
+				break;
+			case 2:
+				panels[i].style.width = '48%';
+				break;
+			case 3:
+				panels[i].style.width = '32%';
+				break;
+			default: break;	
+		}
+		if(i===1) { //panel 2 position & visibility
+			panels[i].style.left = numCams===3 ? '33%' : '50%';
+			panels[i].style.visibility = numCams>1 ? 'visible' : 'hidden';
+		}
+		if(i===2) { //panel 3 visibility
+			panels[i].style.visibility = numCams===3 ? 'visible' : 'hidden';
+		}
+	}
+
+
+	//init callbacks
+// //callback declarations MUST be done at end of html 
+// 	var sliders = document.getElementsByClassName("slider");
+// 	for (var i = 0; i < sliders.length; i++) {
+// 		const slidr = sliders[i];
+// 		const idStr = slidr.id; //"s_cam1_sl16"
+// 		const index = parseInt(idStr.slice(9)); 	//Get index nr
+// 		const camNr = parseInt(idStr.slice(5,6)); 	//Get camera nr
+// 	//console.log("Slider:",idStr,camNr,index);
+// 		slidr.oninput = function() {onSlider(camNr,index,slidr)};
+// 		slidr.onmouseover = function() {on_S_MouseOver() };
+// 		slidr.onmouseout = function() {on_S_MouseOut() };
+// 	}
+
 	//TODO
 	console.log("Done Initializing.");
 }
@@ -272,6 +318,14 @@ function TopPanel() {
 		setTheButton(-1); //Reset state to nothing, So we can press the same button again
 	}, [theButton]);
 
+	useEffect(() => {
+//		console.log("Setting checks and Masters");
+		document.getElementById("Check2_box").style.visibility = numUnreals>=2 ? 'visible' : 'hidden';
+		document.getElementById("Check3_box").style.visibility = numUnreals>=3 ? 'visible' : 'hidden';
+		document.getElementById("Master2_box").style.visibility = numUnreals>=2 ? 'visible' : 'hidden';
+		document.getElementById("Master3_box").style.visibility = numUnreals>=3 ? 'visible' : 'hidden';
+	}, []);
+
 	//This turns checkboxes into radio buttons: Checking one unchecks all others
 	function SetMaster(unreal,checked) {
 		var utel; for(utel=0;utel<numUnreals;utel++) {
@@ -312,8 +366,6 @@ function TopPanel() {
 			}
 		}
 	};
-
-	
 
 	//This breaks the checkbox widget
 	//Called as: <MasterWidget unreal="1" /> in JSX
@@ -370,12 +422,79 @@ function TopPanel() {
 	);
 }
 
-function CamPanel(params) {
+//One slider with parameters
+function Slider(params) {
+	const cam = params.camN;			//Camera nr
+	const idx = params.index;			//Index number in unreal float array order
+	const min = parseInt(params.min);	//Real minimum value (integer)
+	const minSc= min * SlScale; 		//minimum in slider range
+	const max  = parseInt(params.max);	//real maximum value (integer)
+	const maxSc= max * SlScale;			//maximum in slider range
+	const step = parseFloat(params.step);	//Real step value (float!)
+	const style={"--step":step, "--min":min, "--max":max, "--default":0, "--width":99}; //The style object
+	const idStr = "s_cam"+cam+"_sl"+idx;	//Compose Id of this slider to get the object
+	const idStrL= "s_cam"+cam+"_lbl"+idx;	//Compose Id of the label to show the value
+
+	useEffect(() => {
+		console.log("Init slider",idStr);
+		const slidr = document.getElementById(idStr);
+		const output= document.getElementById(idStrL);
+		output.innerHTML=": 0";	//Slider label init
+		slidr.value = "0";
+		// console.log("Slider:",idStr,camNr,index);
+		slidr.oninput = function() {
+			if(IsMinInterval()) { //Regulate sending interval to max 1 per 20ms interval
+				const value = slidr.value;
+				const realVal = value/SlScale;
+				output.innerHTML = ": "+realVal;
+				console.log("Onslider id=",idStr,"value=",realVal);
+				SendFloatValues(cam, idx, realVal.toFixed(3));
+				isPolling = false; //Disable while sliding
+			}
+		}; 
+		slidr.onmouseover = function() {
+			// isPolling = false;
+		};
+		slidr.onmouseout = function() {
+			isPolling = true;
+		};
+	}, [idStr,idStrL,cam,idx]);
 
 	return (
 		<>
-			<label style={{color:'yellow'}}>MainPanel: cam{params.camIndex} </label>
-		</>	
+			<label className="LabelText">{params.title}</label>
+			<label className="LabelValue" id={"s_cam"+cam+"_lbl"+idx}>: 0</label>
+			<div className="range" style={style}>
+				<input 
+					//Do NOT pass a value here. This makes the component "controlled" and blocks slider movement
+					type="range" 
+					className="slider" 
+					min={minSc} 
+					max={maxSc}
+					step="1"
+					id={idStr}
+				/>
+			</div>
+		</>
+	);
+}
+
+//Main panel for one camera
+function CamPanel(params) {
+	const cam = params.camIndex;
+	var credits; //Cannot use a const here
+	if(cam==="1")	credits = <label id="Credits">node.js & REACT Webtool by Chris Van den Bossche</label>;
+	else			credits = <label id="Credits">© 2022 VRT ELAN</label>;
+	return (
+		<div className="MainPanel" id={"CamPanel"+cam}>
+			<h3 className="CamHdr">{"CAM "+cam+": Chromakey"}</h3>
+			<div className="sliderGroup">
+				<Slider camN={cam} title="Chroma Minimum" 	index="5"	min="0" max="1" step="0.1" />
+				<Slider camN={cam} title="Chroma Gain" 		index="6"	min="0" max="8" step="0.5" />
+				<Slider camN={cam} title="Alpha Bias" 		index="9"	min="0" max="1" step="0.1" />
+			</div>
+			{credits}
+		</div>
 	);
 }
 
@@ -389,5 +508,6 @@ function ThePanel() {
 		</>
   	);
 }
+
 
 export default ThePanel;

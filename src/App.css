@@ -68,10 +68,93 @@
 	width:140px;
 }
 
+/*Panel with widgets for one camera*/
+.MainPanel {
+	width: 48%;		/* entire panel width 2 panels */
+	background-image: linear-gradient(#102A10, #202020);
+	 background-color:#182719; 
+	position: absolute;
+	border-radius: 20px;
+	border-style: outset;
+	border-width: 2px;
+	border-color:#103010;
+	
+	margin-left: 1%;
+	z-index: 8;
+}
 
+#CamPanel1 {
+	left:0;
+}
 
+#CamPanel2 {
+	left:50%;	/* 2 cam panels */
+}
 
+#CamPanel3 {
+	visibility: hidden; /* 1 & 2 cam panels */
+	left:66%; /* 3 cam panels */
+}
 
+.sliderGroup {
+/*	background-color:#55f; */
+	margin-left:1%;
+	margin-right:1%;
+}
+
+.col_wheel {
+	width: 100px;
+	color: white;
+	background-color: #404040; 
+	margin-right:10px;
+}
+
+.colorGroup {
+/*	border-color:#09f;	border-width: 1px;	border-style: solid;*/
+	display: block; 
+}
+
+.buttonGroup {
+	border-color:rgb(173, 4, 4);  	border-width: 1px;	border-style: solid;
+	display: block;
+	float:right;
+}
+
+h3 {
+	color: #eee;
+	text-align: center;
+}
+
+.LabelText {
+	color: #afa;
+}
+
+.LabelValue {
+	color: #fff;
+}
+
+#Credits {
+	display: block;
+	padding-right:10px;
+	margin-right: 2%;
+	text-align: right;
+	font: 10px "Lucida Grande", Helvetica, Arial, sans-serif;
+	color:rgb(58, 90, 58);
+}
+
+.CoverPanel {
+	background-color: #182719;
+	opacity: 0.7;
+	position:absolute;
+	width: 98.5%;
+	height: 99%;
+	margin-left: 4px;
+	margin-top: 6px;
+	top: 0;
+	left: 0;
+	z-index: 9;
+}
+	
 /* Popup container */
 .popup {
 	/* border-color:rgb(173, 4, 4);  	border-width: 1px;	border-style: solid; */
