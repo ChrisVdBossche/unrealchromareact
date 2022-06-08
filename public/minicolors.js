@@ -436,7 +436,7 @@
             s: saturation,
             b: brightness
           });
-
+ 
           // Update UI
           slider.css('backgroundColor', hsb2hex({ h: hue, s: saturation, b: 100 }));
           break;

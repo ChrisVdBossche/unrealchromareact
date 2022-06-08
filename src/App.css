@@ -114,6 +114,13 @@
 	display: block; 
 }
 
+.inlineGroup {
+	width: auto;
+	margin-right:5px;
+	/* border-color:#09f;	border-width: 1px;	border-style: solid; */
+	display: inline-block; 
+}
+	
 .buttonGroup {
 	border-color:rgb(173, 4, 4);  	border-width: 1px;	border-style: solid;
 	display: block;
