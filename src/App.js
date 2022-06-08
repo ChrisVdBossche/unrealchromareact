@@ -17,7 +17,7 @@ import $ from 'jquery';
 //==================================================================================================
                                                        
 //How many unreal servers are actually used?
-const numUnreals = 2;
+const numUnreals = 3;
 //How many cameras are actually in use for each unreal server? (1,2,3)
 const numCams = 2;
 
@@ -67,6 +67,16 @@ var colorUpdate = true; //Can we update color values? (true if from user input, 
 var tel,tel2,unreal;
 
 //==================================================================================================
+
+// d888888b d8b   db d888888b d888888b d888888b  .d8b.  db      d888888b .d8888. d88888b 
+//   `88'   888o  88   `88'   `~~88~~'   `88'   d8' `8b 88        `88'   88'  YP 88'     
+//    88    88V8o 88    88       88       88    88ooo88 88         88    `8bo.   88ooooo 
+//    88    88 V8o88    88       88       88    88~~~88 88         88      `Y8b. 88~~~~~ 
+//   .88.   88  V888   .88.      88      .88.   88   88 88booo.   .88.   db   8D 88.     
+// Y888888P VP   V8P Y888888P    YP    Y888888P YP   YP Y88888P Y888888P `8888Y' Y88888P 
+
+//==================================================================================================
+
 //====== Initializing Globals ======
 for(tel=0;tel<3;tel++) {
 	uStatus[tel] =  Unknown;
@@ -81,58 +91,12 @@ for(tel=0;tel<3;tel++) {
 //uActive[2] = true;	//server 3 active on startup
 
 //===== Initialize client panel ===============
-onInit();
-
-//==================================================================================================
-
-// d888888b d8b   db d888888b d888888b d888888b  .d8b.  db      d888888b .d8888. d88888b 
-//   `88'   888o  88   `88'   `~~88~~'   `88'   d8' `8b 88        `88'   88'  YP 88'     
-//    88    88V8o 88    88       88       88    88ooo88 88         88    `8bo.   88ooooo 
-//    88    88 V8o88    88       88       88    88~~~88 88         88      `Y8b. 88~~~~~ 
-//   .88.   88  V888   .88.      88      .88.   88   88 88booo.   .88.   db   8D 88.     
-// Y888888P VP   V8P Y888888P    YP    Y888888P YP   YP Y88888P Y888888P `8888Y' Y88888P 
-
-//==================================================================================================
-
-//====== Initialisations, called at startup/reload client ======
-function onInit() { 
-	console.log("Initializing...");
-
-//TODO: Init minicolors
-
-	//Camera panel width, positions, visibility
-	const panels = document.getElementsByClassName("MainPanel");
-	for(var i = 0; i < panels.length; i++) {
-		switch(numCams) { //all panels width
-			case 1:
-				panels[i].style.width = '98%';
-				break;
-			case 2:
-				panels[i].style.width = '48%';
-				break;
-			case 3:
-				panels[i].style.width = '32%';
-				break;
-			default: break;	
-		}
-		if(i===1) { //panel 2 position & visibility
-			panels[i].style.left = numCams===3 ? '33%' : '50%';
-			panels[i].style.visibility = numCams>1 ? 'visible' : 'hidden';
-		}
-		if(i===2) { //panel 3 visibility
-			panels[i].style.visibility = numCams===3 ? 'visible' : 'hidden';
-		}
-	}
-
-//Start timers
+console.log("Starting timers...");
 //Sync every few seconds so we always have unreal status
-	StartPollingTimer(PollingInterval);
+StartPollingTimer(PollingInterval);
 //Timer for blinking alerts	
-	StartBlinkingTimer();
+StartBlinkingTimer();
 
-	//TODO
-	console.log("Done Initializing.");
-}
 
 //===========================================================================================================
 
@@ -450,7 +414,7 @@ function SyncAllCamsFromUnreal(unreal)
 	if(uActive[um1]) {
 		SyncFromUnreal(unreal);
 	} else {
-//		console.log("Setting status Unreal",unreal,"to NotUsed");
+		// console.log("Setting status Unreal",unreal,"to NotUsed");
 		SetUnrealServerStatus(unreal, NotUsed); //Not active overrides status
 	}
 }
@@ -594,7 +558,7 @@ function StartBlinkingTimer()
 {
 	StopBlinkingTimer();
 	blinkingId = setInterval(function() {
-//console.log("Blinking:",BlinkOn);
+	// console.log("Blinking:",BlinkOn);
 		for(tel2=1;tel2<=numUnreals;tel2++) {
 			SetUnrealServerStatus(tel2, uStatus[tel2-1],true);
 		}
@@ -680,7 +644,7 @@ function SetUnrealServerStatus(unreal, status, blink=false)
 	if(!uActive[um1]) status = NotUsed; //For late status updates
 	uStatus[um1] = status;
 	if(status !== oldStatus[um1] || blink) {
-//console.log("SetUnrealServerStatus Unreal",unreal,"status:",status);
+		if(!blink) console.log("SetUnrealServerStatus Unreal",unreal,"blink:",blink,"status:",status);
 		switch(status) {
 		//Not blinking status
 		case Unknown:
@@ -724,7 +688,8 @@ function SetUnrealServerStatus(unreal, status, blink=false)
 			for(tel=1;tel<=numCams;tel++) {
 				const cover = document.getElementById("Cover"+tel);
 				if(cover) { //Hide cover if unreal online to enable widget use
-					cover.style.display = isOnline?"none":"block"; 
+//					cover.style.display = isOnline?"none":"block"; 
+					if(tel===1) cover.style.display = isOnline?"none":"none"; 
 				}
 			}
 			oldStatus[um1] = status;
@@ -791,16 +756,30 @@ function ShowHelp() {
 
 //==========================================================================================================================
 
-// d8888b. d88888b  .d8b.   .o88b. d888888b d88888b db    db d8b   db  .o88b. d888888b d888888b  .d88b.  d8b   db .d8888. 
-// 88  `8D 88'     d8' `8b d8P  Y8 `~~88~~' 88'     88    88 888o  88 d8P  Y8 `~~88~~'   `88'   .8P  Y8. 888o  88 88'  YP 
-// 88oobY' 88ooooo 88ooo88 8P         88    88ooo   88    88 88V8o 88 8P         88       88    88    88 88V8o 88 `8bo.   
-// 88`8b   88~~~~~ 88~~~88 8b         88    88~~~   88    88 88 V8o88 8b         88       88    88    88 88 V8o88   `Y8b. 
-// 88 `88. 88.     88   88 Y8b  d8    88    88      88b  d88 88  V888 Y8b  d8    88      .88.   `8b  d8' 88  V888 db   8D 
-// 88   YD Y88888P YP   YP  `Y88P'    YP    YP      ~Y8888P' VP   V8P  `Y88P'    YP    Y888888P  `Y88P'  VP   V8P `8888Y' 
-
+// d888888b  .d88b.  d8888b.     d8888b.  .d8b.  d8b   db d88888b db      
+// `~~88~~' .8P  Y8. 88  `8D     88  `8D d8' `8b 888o  88 88'     88      
+//    88    88    88 88oodD'     88oodD' 88ooo88 88V8o 88 88ooooo 88      
+//    88    88    88 88~~~       88~~~   88~~~88 88 V8o88 88~~~~~ 88      
+//    88    `8b  d8' 88          88      88   88 88  V888 88.     88booo. 
+//    YP     `Y88P'  88          88      YP   YP VP   V8P Y88888P Y88888P 
+                                                                       
 //==========================================================================================================================
 
+
 function TopPanel(props) {
+	//This code is called on initialisation of the component
+	useEffect(() => {
+		console.log("==> Initializing top panel...");
+		document.getElementById("Check2_box").style.visibility = numUnreals>=2 ? 'visible' : 'hidden';
+		document.getElementById("Check3_box").style.visibility = numUnreals>=3 ? 'visible' : 'hidden';
+		document.getElementById("Master2_box").style.visibility = numUnreals>=2 ? 'visible' : 'hidden';
+		document.getElementById("Master3_box").style.visibility = numUnreals>=3 ? 'visible' : 'hidden';
+//Set initial status widgets to unknown status
+		for(tel=0;tel<numUnreals;tel++) {
+			SetUnrealServerStatus(tel+1, Unknown);
+		}
+	}, []);
+
 	//Buttons pressed
 	let [theButton, setTheButton] = useState(-1); //Which button pressed? (0->n)
 	useEffect(() => {
@@ -816,14 +795,6 @@ function TopPanel(props) {
 		}
 		setTheButton(-1); //Reset state to nothing, So we can press the same button again
 	}, [theButton]);
-
-	useEffect(() => {
-//		console.log("Setting checks and Masters");
-		document.getElementById("Check2_box").style.visibility = numUnreals>=2 ? 'visible' : 'hidden';
-		document.getElementById("Check3_box").style.visibility = numUnreals>=3 ? 'visible' : 'hidden';
-		document.getElementById("Master2_box").style.visibility = numUnreals>=2 ? 'visible' : 'hidden';
-		document.getElementById("Master3_box").style.visibility = numUnreals>=3 ? 'visible' : 'hidden';
-	}, []);
 
 	//This turns checkboxes into radio buttons: Checking one unchecks all others
 	function SetMaster(unreal,checked) {
@@ -843,6 +814,19 @@ function TopPanel(props) {
 		console.log("Master id:",idStr,"unreal:",unreal,"checked:",checked); 
 		SetMaster(unreal,true); //Do not allow to uncheck the checked box
 	};
+
+//	This breaks animation in the checkbox widget
+//	Called as: <MasterWidget unreal="1" /> in JSX
+	function MasterWidget(param) {
+		const uStr = param.unreal;
+		const UuStr = "U"+uStr;
+		const unreal = parseInt(uStr);
+		return (
+			<div className="Unreals" id={"Master"+uStr+"_box"}>
+				<ToggleSwitch id={"Master_U"+uStr} checked={MasterStates[unreal-1][0]} onChange={onMasterChanged} optionLabels={[UuStr,uStr]} />
+			</div>
+		);
+	} 
 
 	//Enable/disable an unreal state
 	let UnrealStates = [useState(uActive[0]), useState(uActive[1]), useState(uActive[2])];
@@ -866,25 +850,15 @@ function TopPanel(props) {
 		}
 	};
 
-	//This breaks the checkbox widget
-	//Called as: <MasterWidget unreal="1" /> in JSX
-	// function MasterWidget(param) {
-	// 	const uStr = param.unreal;
-	// 	const UuStr = "U"+uStr;
-	// 	const unreal = parseInt(uStr);
-	// 	return (
-	// 		<div className="Unreals" id={"Master"+uStr+"_box"}>
-	// 			<ToggleSwitch id={"Master_U"+uStr} checked={MasterStates[unreal-1][0]} onChange={onMasterChanged} optionLabels={[UuStr,uStr]} />
-	// 		</div>
-	// 	);
-	// } 
-
 	return (
 		<>
 			<div className="TopPanel">
 				<label id="TitleLabel">Unreal Chromakey Control Panel</label>
 				<div className="MasterSelect">
 					<label className="MasterLabel">Master Unreal:</label>
+					{/* <MasterWidget unreal="1" />
+					<MasterWidget unreal="2" />
+					<MasterWidget unreal="3" /> */}
 					<div className="Unreals" id="Master1_box">
 						<ToggleSwitch id="Master_U1" checked={MasterStates[0][0]} onChange={onMasterChanged} optionLabels={["U1","1"]} />
 					</div>
@@ -920,6 +894,18 @@ function TopPanel(props) {
 		</>
 	);
 }
+
+//==========================================================================================================================
+
+// .d8888. db      d888888b d8888b. d88888b d8888b. 
+// 88'  YP 88        `88'   88  `8D 88'     88  `8D 
+// `8bo.   88         88    88   88 88ooooo 88oobY' 
+//   `Y8b. 88         88    88   88 88~~~~~ 88`8b   
+// db   8D 88booo.   .88.   88  .8D 88.     88 `88. 
+// `8888Y' Y88888P Y888888P Y8888D' Y88888P 88   YD 
+                                                                                                  
+//==========================================================================================================================
+
 
 //One slider with parameters
 function Slider(props) {
@@ -979,21 +965,59 @@ function Slider(props) {
 	);
 }
 
+//==========================================================================================================================
+
+//  .o88b.  .d8b.  .88b  d88.     d8888b.  .d8b.  d8b   db d88888b db      
+// d8P  Y8 d8' `8b 88'YbdP`88     88  `8D d8' `8b 888o  88 88'     88      
+// 8P      88ooo88 88  88  88     88oodD' 88ooo88 88V8o 88 88ooooo 88      
+// 8b      88~~~88 88  88  88     88~~~   88~~~88 88 V8o88 88~~~~~ 88      
+// Y8b  d8 88   88 88  88  88     88      88   88 88  V888 88.     88booo. 
+//  `Y88P' YP   YP YP  YP  YP     88      YP   YP VP   V8P Y88888P Y88888P 
+
+//==========================================================================================================================
+
 //Main panel for one camera
 function CamPanel(props) {
 	const cam = props.camIndex;
 	const iCam = parseInt(cam);
 	const cm1 = iCam - 1;
 	var   otherCam = "1";	//the "master" camera to copy settings from (unreal knows this)
-	const idStr1 = "Check_Cam"+cam+"_A";	//Compose id of this switch
-	const idStr2 = "Check_Cam"+cam+"_F";
-	var credits; //Cannot use a const here
+	const idStr1 = "Check_Cam"+cam+"_A";	//Compose id of show alpha switch
+	const idStr2 = "Check_Cam"+cam+"_F";	//Compose id of show unkeyed fill switch
+	var credits; //Different credits per panel
 	if(cam==="1")	{
-		credits = <label id="Credits">node.js & REACT Webtool by Chris Van den Bossche</label>;
+		credits = <label id="Credits">node.js Server & REACT Webtool by Chris Van den Bossche</label>;
 		otherCam = "2";
 	} else {
 		credits = <label id="Credits">© 2022 VRT ELAN</label>;
 	}
+
+	//This code is called on initialisation of the component
+	useEffect(() => {
+		console.log("==> Initializing CAM"+cam+" panel...");
+
+		//Camera panel width, position, visibility
+		const thePanel = document.getElementById("CamPanel"+cam);
+		switch(numCams) { //all panels width
+			case 1:
+				thePanel.style.width = '98%';
+				break;
+			case 2:
+				thePanel.style.width = '48%';
+				break;
+			case 3:
+				thePanel.style.width = '32%';
+				break;
+			default: break;	
+		}
+		if(iCam===2) { //panel 2 position & visibility
+			thePanel.style.left = numCams===3 ? '33%' : '50%';
+			thePanel.style.visibility = numCams>1 ? 'visible' : 'hidden';
+		}
+		if(iCam===3) { //panel 3 visibility
+			thePanel.style.visibility = numCams===3 ? 'visible' : 'hidden';
+		}
+	}, [cam]);
 
 	//Buttons pressed
 	let [theButton, setTheButton] = useState(-1); //Which button pressed? (0->n)
@@ -1004,14 +1028,14 @@ function CamPanel(props) {
 				switch(theButton) {
 				case 0:
 					SwitchToCam(unreal,iCam);
-					console.log("Show cam",cam);
+					console.log("U",unreal,"Show cam",cam);
 					break;
 				case 1:
-					console.log("Copy from cam",otherCam);
+					console.log("U",unreal,"Copy from cam",otherCam);
 					CopyCamSettingsTo(unreal,iCam);
 					break;
 				case 2:
-					console.log("Defaults cam",cam);
+					console.log("U",unreal,"Defaults cam",cam);
 					SetDefaultSettings(unreal,iCam);
 					break;
 				default: break;	
@@ -1057,6 +1081,7 @@ function CamPanel(props) {
 				<div className="colorGroup">
 					<div className="inlineGroup">
 						<label className="LabelText" htmlFor="ColorWheel">Key Color:</label>
+
 					</div>	
 					<div className="inlineGroup">
 						<label className="LabelText" htmlFor="ColorWheel"> Show Alpha:</label>
@@ -1070,7 +1095,7 @@ function CamPanel(props) {
 				</div>
 			</div>
 			<hr style={{"height":"6px", "borderWidth":"1px", "borderColor":"black", "backgroundColor":"#020"}}/>
-			<h3 className="CamHdr">CAM 1: Despill & Post process</h3>
+			<h3 className="CamHdr">{"CAM "+cam+": Despill & Post process"}</h3>
 			<div className="sliderGroup">
 				<Slider camN={cam} title="Despill Amount" 		index="16"	min="0" max="2" step="0.1" />
 				<Slider camN={cam} title="Hue Range" 			index="17"	min="0" max="1" step="0.1" />
@@ -1082,10 +1107,12 @@ function CamPanel(props) {
 				<div className="colorGroup">
 					<div className="inlineGroup">
 						<label className="LabelText" htmlFor="ColorWheel">Sky Color:</label>
+
 					</div>	
 					<button id={"CopyFrom_Cam"+cam}  className="button button1" onClick={() => setTheButton(1)}>{"Copy From CAM "+otherCam}</button>
 					<button id={"Default_Cam"+cam}   className="button button1" onClick={() => setTheButton(2)}>Default values</button>
 				</div>
+				<div className="CoverPanel" id={"Cover"+cam}></div>
 			</div>
 			{credits}
 		</div>
