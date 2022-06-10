@@ -15,22 +15,24 @@ import $ from 'jquery';
 //  Y888P  Y88888P  `Y88P'  Y8888P' YP   YP Y88888P `8888Y' 
 
 //==================================================================================================
-                                                       
-//How many unreal servers are actually used?
-const numUnreals = 3;
-//How many cameras are actually in use for each unreal server? (1,2,3)
+//Hardcoded maximum unreals in this app
+const maxUnreals = 3;
+
+//How many unreal servers are actually used? (1 -> maxUnreals)
+const numUnreals = 2;
+//How many cameras are actually in use for each unreal server? (1 -> 4)
 const numCams = 2;
 
 //unreal server status (unreal 1-2-3)
-var uStatus = new Array(3);	//unreal status
-var oldStatus = new Array(3);	//To avoid unneeded, blink-disturbing update of status widgets
-var uActive = new Array(3);	//unreal active or not
+var uStatus = new Array(maxUnreals);	//unreal status
+var oldStatus = new Array(maxUnreals);	//To avoid unneeded, blink-disturbing update of status widgets
+var uActive = new Array(maxUnreals);	//unreal active or not
 var masterUnreal = 0; //No unreal as master yet
 var masterData;		//Remember data from master, to send to other unreals
 
 //key-fill checkbox status (cam 1-2-3)
-var alphaState = new Array(3); 
-var fillState = new Array(3);
+var alphaState = new Array(maxUnreals); 
+var fillState = new Array(maxUnreals);
 
 //Node.js server that translates unreal commands
 const nodeServerIP = "localhost:8800";
@@ -63,7 +65,7 @@ const BlinkTimer = 400;	//Blinking alerts
 var BlinkOn = true;	//Color on or off
 var isPolling = true;  //Interval polling enabled or not
 var colorUpdate = true; //Can we update color values? (true if from user input, false if from setting widget)
-var tel,tel2,unreal;
+var tel,unreal;
 
 //==================================================================================================
 
@@ -77,7 +79,7 @@ var tel,tel2,unreal;
 //==================================================================================================
 
 //====== Initializing Globals ======
-for(tel=0;tel<3;tel++) {
+for(tel=0;tel<maxUnreals;tel++) {
 	uStatus[tel] =  Unknown;
 	uActive[tel] =  false;
 	alphaState[tel] = false;
@@ -362,7 +364,7 @@ function SendAllParams(unreal, data)
 
 
 
-// //====== Send value per type to one Unreal ======
+// //====== Send value per type to one Unreal (obsolete) ======
 // function SendFloatValue(unreal, camNr, index, value) //camNr, index: integer. value: float
 // {
 // 	SendValue(unreal, 0, camNr, index, parseFloat(value)); //Value must be a float, NOT a string! (I hate weak typing!)
@@ -387,6 +389,7 @@ function SendColorValue(unreal, camNr, index, value) //camNr, index: integer. va
 //====== Send value per type to all unreals ======
 function SendFloatValues(camNr, index, value) //camNr, index: integer. value: float
 {
+	console.log("Sending values cam",camNr,"index",index,"to:",value);
 	for(unreal=1;unreal<=numUnreals;unreal++) {
 		SendValue(unreal, 0, camNr, index, parseFloat(value)); //Value must be a float, NOT a string! (I hate weak typing!)
 	}
@@ -556,8 +559,8 @@ function StartBlinkingTimer()
 	StopBlinkingTimer();
 	blinkingId = setInterval(function() {
 	// console.log("Blinking:",BlinkOn);
-		for(tel2=1;tel2<=numUnreals;tel2++) {
-			SetUnrealServerStatus(tel2, uStatus[tel2-1],true);
+		for(unreal=1;unreal<=numUnreals;unreal++) {
+			SetUnrealServerStatus(unreal, uStatus[unreal-1],true);
 		}
 		BlinkOn = !BlinkOn;
 	}, BlinkTimer);
@@ -685,8 +688,9 @@ function SetUnrealServerStatus(unreal, status, blink=false)
 			for(tel=1;tel<=numCams;tel++) {
 				const cover = document.getElementById("Cover"+tel);
 				if(cover) { //Hide cover if unreal online to enable widget use
-//					cover.style.display = isOnline?"none":"block"; 
-					if(tel===1) cover.style.display = isOnline?"none":"none"; 
+					// cover.style.display = isOnline?"none":"block"; 
+					// if(tel===1) cover.style.display = isOnline?"none":"none"; 
+					cover.style.display = "none";
 				}
 			}
 			oldStatus[um1] = status;
@@ -747,6 +751,7 @@ const theHelpFile = <>
 	<br/>Click <b>HELP</b> again to hide.
 </>
 
+//Toggle help panel
 function ShowHelp() {
 	document.getElementById("help_Popup").classList.toggle("show");
 }
@@ -767,11 +772,7 @@ function TopPanel(props) {
 	//This code is called on initialisation of the component
 	useEffect(() => {
 		console.log("==> Initializing top panel...");
-		document.getElementById("Check2_box").style.visibility = numUnreals>=2 ? 'visible' : 'hidden';
-		document.getElementById("Check3_box").style.visibility = numUnreals>=3 ? 'visible' : 'hidden';
-		document.getElementById("Master2_box").style.visibility = numUnreals>=2 ? 'visible' : 'hidden';
-		document.getElementById("Master3_box").style.visibility = numUnreals>=3 ? 'visible' : 'hidden';
-//Set initial status widgets to unknown status
+		//Set initial status widgets to unknown status
 		for(tel=0;tel<numUnreals;tel++) {
 			SetUnrealServerStatus(tel+1, Unknown);
 		}
@@ -835,7 +836,7 @@ function TopPanel(props) {
 		}
 	};
 
-//	Warning: Using a module instead of inline code breaks animation in the ToggleSwitch widget
+//	Warning: Using a component instead of inline code breaks animation in the ToggleSwitch widget!
 //	Called as: <MasterWidget unreal="1" /> in JSX
 	// function MasterWidget(param) {
 	// 	const uStr = param.unreal;
@@ -848,49 +849,110 @@ function TopPanel(props) {
 	// 	);
 	// } 
 
-	return (
-		<>
-			<div className="TopPanel">
-				<label id="TitleLabel">Unreal Chromakey Control Panel</label>
-				<div className="MasterSelect">
-					<label className="MasterLabel">Master Unreal:</label>
-					{/* <MasterWidget unreal="1" />
-					<MasterWidget unreal="2" />
-					<MasterWidget unreal="3" /> */}
-					<div className="Unreals" id="Master1_box">
-						<ToggleSwitch id="Master_U1" checked={MasterStates[0][0]} onChange={onMasterChanged} optionLabels={["U1","1"]} />
-					</div>
-					<div className="Unreals" id="Master2_box">
-						<ToggleSwitch id="Master_U2" checked={MasterStates[1][0]} onChange={onMasterChanged} optionLabels={["U2","2"]} />
-					</div>	
-					<div className="Unreals" id="Master3_box">
-						<ToggleSwitch id="Master_U3" checked={MasterStates[2][0]} onChange={onMasterChanged} optionLabels={["U3","3"]} />
-					</div>
-					<button id="But0" className="button button1" onClick={() => setTheButton(0)}>Copy Master to Others</button>
-				</div>
-				<div className="popup">
-					<button id="But1" className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
-					<span className="popuptext" id="help_Popup">{theHelpFile}</span>
-				</div>	
+	switch(numUnreals) {
+		//================================ 1 unreal ==============================
+		default:
+		case 1: 	//With a single unreal, no need for a "master"
+			return (
+				<>
+					<div className="TopPanel">
+						<label id="TitleLabel">Unreal Chromakey Control Panel</label>
+						<div className="popup">
+							<button id="But1" className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
+							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
+						</div>	
 
-				<div className="UnrealBlock">
-					<label id="PollingLabel">Poll&nbsp;Status</label>
-					<div className="Unreals" id="Check1_box">
-						<ToggleSwitch id="Check_U1" checked={UnrealStates[0][0]} onChange={onUnrealToggleChanged} optionLabels={["1 On","1 Off"]}/>
-						<label className="UnrealStatus" id="Status1">Unreal1: Unknown</label>
-					</div>	
-					<div className="Unreals" id="Check2_box">
-						<ToggleSwitch id="Check_U2"	checked={UnrealStates[1][0]} onChange={onUnrealToggleChanged} optionLabels={["2 On","2 Off"]}/>
-						<label className="UnrealStatus" id="Status2">Unreal2: Unknown</label>
-					</div>	
-					<div className="Unreals" id="Check3_box">
-						<ToggleSwitch id="Check_U3"	checked={UnrealStates[2][0]} onChange={onUnrealToggleChanged} optionLabels={["3 On","3 Off"]}/>
-						<label className="UnrealStatus" id="Status3">Unreal3: Unknown</label>
-					</div>	
-				</div>
-			</div>
-		</>
-	);
+						<div className="UnrealBlock">
+							<label id="PollingLabel">Poll&nbsp;Status</label>
+							<div className="Unreals" id="Check1_box">
+								<ToggleSwitch id="Check_U1" checked={UnrealStates[0][0]} onChange={onUnrealToggleChanged} optionLabels={["1 On","1 Off"]}/>
+								<label className="UnrealStatus" id="Status1">Unreal1: Unknown</label>
+							</div>	
+						</div>
+					</div>
+				</>
+			);
+		//================================ 2 unreals =============================
+		case 2: 
+			return (
+				<>
+					<div className="TopPanel">
+						<label id="TitleLabel">Unreal Chromakey Control Panel</label>
+						<div className="MasterSelect">
+							<label className="MasterLabel">Master Unreal:</label>
+							<div className="Unreals" id="Master1_box">
+								<ToggleSwitch id="Master_U1" checked={MasterStates[0][0]} onChange={onMasterChanged} optionLabels={["U1","1"]} />
+							</div>
+							<div className="Unreals" id="Master2_box">
+								<ToggleSwitch id="Master_U2" checked={MasterStates[1][0]} onChange={onMasterChanged} optionLabels={["U2","2"]} />
+							</div>	
+							<button id="But0" className="button button1" onClick={() => setTheButton(0)}>Copy Master to Others</button>
+						</div>
+						<div className="popup">
+							<button id="But1" className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
+							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
+						</div>	
+
+						<div className="UnrealBlock">
+							<label id="PollingLabel">Poll&nbsp;Status</label>
+							<div className="Unreals" id="Check1_box">
+								<ToggleSwitch id="Check_U1" checked={UnrealStates[0][0]} onChange={onUnrealToggleChanged} optionLabels={["1 On","1 Off"]}/>
+								<label className="UnrealStatus" id="Status1">Unreal1: Unknown</label>
+							</div>	
+							<div className="Unreals" id="Check2_box">
+								<ToggleSwitch id="Check_U2"	checked={UnrealStates[1][0]} onChange={onUnrealToggleChanged} optionLabels={["2 On","2 Off"]}/>
+								<label className="UnrealStatus" id="Status2">Unreal2: Unknown</label>
+							</div>	
+						</div>
+					</div>
+				</>
+			);
+		//================================ 3 unreals =============================
+		case 3: 
+			return (
+				<>
+					<div className="TopPanel">
+						<label id="TitleLabel">Unreal Chromakey Control Panel</label>
+						<div className="MasterSelect">
+							<label className="MasterLabel">Master Unreal:</label>
+							{/* <MasterWidget unreal="1" />
+							<MasterWidget unreal="2" />
+							<MasterWidget unreal="3" /> */}
+							<div className="Unreals" id="Master1_box">
+								<ToggleSwitch id="Master_U1" checked={MasterStates[0][0]} onChange={onMasterChanged} optionLabels={["U1","1"]} />
+							</div>
+							<div className="Unreals" id="Master2_box">
+								<ToggleSwitch id="Master_U2" checked={MasterStates[1][0]} onChange={onMasterChanged} optionLabels={["U2","2"]} />
+							</div>	
+							<div className="Unreals" id="Master3_box">
+								<ToggleSwitch id="Master_U3" checked={MasterStates[2][0]} onChange={onMasterChanged} optionLabels={["U3","3"]} />
+							</div>
+							<button id="But0" className="button button1" onClick={() => setTheButton(0)}>Copy Master to Others</button>
+						</div>
+						<div className="popup">
+							<button id="But1" className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
+							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
+						</div>	
+
+						<div className="UnrealBlock">
+							<label id="PollingLabel">Poll&nbsp;Status</label>
+							<div className="Unreals" id="Check1_box">
+								<ToggleSwitch id="Check_U1" checked={UnrealStates[0][0]} onChange={onUnrealToggleChanged} optionLabels={["1 On","1 Off"]}/>
+								<label className="UnrealStatus" id="Status1">Unreal1: Unknown</label>
+							</div>	
+							<div className="Unreals" id="Check2_box">
+								<ToggleSwitch id="Check_U2"	checked={UnrealStates[1][0]} onChange={onUnrealToggleChanged} optionLabels={["2 On","2 Off"]}/>
+								<label className="UnrealStatus" id="Status2">Unreal2: Unknown</label>
+							</div>	
+							<div className="Unreals" id="Check3_box">
+								<ToggleSwitch id="Check_U3"	checked={UnrealStates[2][0]} onChange={onUnrealToggleChanged} optionLabels={["3 On","3 Off"]}/>
+								<label className="UnrealStatus" id="Status3">Unreal3: Unknown</label>
+							</div>	
+						</div>
+					</div>
+				</>
+			);
+	}
 }
 
 //==========================================================================================================================
@@ -920,7 +982,7 @@ function Slider(props) {
 
 
 	useEffect(() => {
-		console.log("Init slider",s_IdStr);
+		console.log("==> Init slider CAM"+cam,"nr",idx);
 		const slidr = document.getElementById(s_IdStr);
 		const output= document.getElementById(s_IdStrL);
 		output.innerHTML=": 0";	//Slider label init
@@ -931,14 +993,14 @@ function Slider(props) {
 				const value = parseFloat(slidr.value);
 				const realVal = value / SlScale;
 				output.innerHTML = ": "+realVal;
-				console.log("Onslider id=",s_IdStr,"value=",realVal);
+				// console.log("Onslider id=",s_IdStr,"value=",realVal);
 				SendFloatValues(parseInt(cam), parseInt(idx), realVal.toFixed(3));
 				isPolling = false; //Disable while sliding
 			}
 		}; 
-		slidr.onmouseover = function() {
-			// isPolling = false;
-		};
+		// slidr.onmouseover = function() { //obsolete
+		// 	isPolling = false;
+		// };
 		slidr.onmouseout = function() {
 			isPolling = true;
 		};
@@ -995,29 +1057,36 @@ function CamPanel(props) {
 
 		//Camera panel width, position, visibility
 		const thePanel = document.getElementById("CamPanel"+cam);
+		//Made for up to 4 cameras
 		switch(numCams) { //all panels width
 			case 1:
 				thePanel.style.width = '98%';
 				break;
 			case 2:
-				thePanel.style.width = '48%';
+				thePanel.style.width = '48.5%';
 				break;
 			case 3:
 				thePanel.style.width = '32%';
 				break;
+			case 4:
+				thePanel.style.width = '23.5%';
+				break;
 			default: break;	
 		}
-		switch(iCam) {
+		switch(iCam) { //All panels position
 			case 1:
 				thePanel.style.left = '0%';
 				break;
 			case 2:
-				thePanel.style.left = numCams===3 ? '33%' : '50%';
-				thePanel.style.visibility = numCams>1 ? 'visible' : 'hidden';
+				if(numCams===3) thePanel.style.left = '33%';
+				else if(numCams===4) thePanel.style.left = '25%';
+				else thePanel.style.left = '50%';
 				break;
 			case 3:
-				thePanel.style.left = '66%';
-				thePanel.style.visibility = numCams===3 ? 'visible' : 'hidden';
+				thePanel.style.left = numCams===4 ? '50%' : '66%';
+				break;
+			case 4:
+				thePanel.style.left = '75%';
 				break;
 			default: break;	
 		}
@@ -1031,15 +1100,15 @@ function CamPanel(props) {
 			for(unreal=1;unreal<=numUnreals;unreal++) {
 				switch(theButton) {
 				case 0:
+					console.log("U"+unreal,"Show cam",cam);
 					SwitchToCam(unreal,iCam);
-					console.log("U",unreal,"Show cam",cam);
 					break;
 				case 1:
-					console.log("U",unreal,"Copy from cam",otherCam);
+					console.log("U"+unreal,"Copy from cam"+otherCam,"to cam"+cam);
 					CopyCamSettingsTo(unreal,iCam);
 					break;
 				case 2:
-					console.log("U",unreal,"Defaults cam",cam);
+					console.log("U"+unreal,"Defaults for cam",cam);
 					SetDefaultSettings(unreal,iCam);
 					break;
 				default: break;	
@@ -1123,14 +1192,48 @@ function CamPanel(props) {
 }
 
 function ThePanel(props) {
-  	return (
-		<>
-			<TopPanel />
-			<CamPanel camIndex="1"/>
-			<CamPanel camIndex="2"/>
-			<CamPanel camIndex="3"/>
-		</>
-  	);
+	switch(numCams) { //conditional camera panels
+		case 1:
+			return (
+				<>
+					<TopPanel />
+					<CamPanel camIndex="1"/>
+				</>
+			);
+		case 2:
+			return (
+				<>
+					<TopPanel />
+					<CamPanel camIndex="1"/>
+					<CamPanel camIndex="2"/>
+				</>
+			);
+		case 3:
+			return (
+				<>
+					<TopPanel />
+					<CamPanel camIndex="1"/>
+					<CamPanel camIndex="2"/>
+					<CamPanel camIndex="3"/>
+				</>
+			);
+		case 4:
+			return (
+				<>
+					<TopPanel />
+					<CamPanel camIndex="1"/>
+					<CamPanel camIndex="2"/>
+					<CamPanel camIndex="3"/>
+					<CamPanel camIndex="4"/>
+				</>
+			);
+		default:
+		return (
+			<>
+				<TopPanel />
+			</>
+		);
+	}
 }
 
 export default ThePanel;
