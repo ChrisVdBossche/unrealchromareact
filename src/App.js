@@ -33,8 +33,7 @@ var alphaState = new Array(3);
 var fillState = new Array(3);
 
 //Node.js server that translates unreal commands
-//const nodeServerIP = "localhost:8800";
-const nodeServerIP = "mira.be";
+const nodeServerIP = "localhost:8800";
 
 //Amount of Unreal controlling widgets
 const numFloats = 23;
@@ -194,7 +193,7 @@ function SyncFromUnreal(unreal) //unrealnr: 1-based
 	const param = {
 		unrealServer:unreal
 	}	//The body
-//	console.log("client POST: ",url,param);
+	console.log("client POST: ",url,param);
 //POST this to our server
 	$.ajax({
         type: "POST",
@@ -232,7 +231,7 @@ function CallFunction(unreal, pType, pCamNr) //A single integer: Camera nr
 		type:pType, 
 		camNr:pCamNr, 
 	}	//The body
-//	console.log("client POST: ",url,param);
+	console.log("client POST: ",url,param);
 //POST this to our server
 	$.ajax({
         type: "POST",
@@ -279,9 +278,7 @@ function CallFunction2(unreal, pType, pData) //An object: pData
     })
 	.done(function(data) {  //replaces the .success function
 		SetUnrealServerStatus(unreal, Online); //No data to process. Just set status online
-		// setTimeout(function() { //Sync with a small delay to allow unreal to execute 
-		// 	SyncFromUnreal(unreal);
-		// }, 100);
+		//No sync needed: Slave unreals do not display their data
 	})
     .fail(function(data) {  	//replaces the .error: function
 		HandleFailure(unreal, data);
@@ -291,47 +288,48 @@ function CallFunction2(unreal, pType, pData) //An object: pData
 	});
 }
 
-// TEST TEST TEST
+// //TEST TEST TEST TEST TEST TEST TEST TEST TEST
 // function TestGet(unreal)
 // {
 // 	console.log("Test");
 // }
 
 
-//Send "get all params" directly to Unreal - TEST TEST TEST
-function SyncFromUnrealDirect(unreal) //unrealnr: 1-based
-{
+// //TEST TEST TEST TEST TEST TEST TEST TEST TEST
+// //Send "get all params" directly to Unreal
+// function SyncFromUnrealDirect(unreal) //unrealnr: 1-based
+// {
 
-//	const url = "http://127.0.0.1:7010/remote/object/call";
-	const url = "http://10.210.20.24:7010/remote/object/call";
-//	const url = "http://10.210.20.44:7010/remote/object/call";
-const pparam = {
-		"objectPath" : "/Game/PeetieLevels/UEDPIE_0_00_VirtualSet.00_VirtualSet:PersistentLevel.ChromakeyController"
-		,"functionName" : "GetAllParamsFromAllCams"
-		,"generateTransaction" : true 
-	};
-//	console.log("client POST: ",url,param);
-//POST this to our server
-	$.ajax({
-        type: "PUT",
-        url: url,
-		contentType: 'application/json',
-        dataType: "json",
-		data: JSON.stringify(pparam),
-    })
-	.done(function(data) {  //replaces the .success function
-		console.log("Received data from Unreal:",data);
-		SetUnrealServerStatus(unreal, Online); 
-		SetWidgetsAllCams(unreal, data);	//Set the widgets with received data
-	})
-    .fail(function(data) {  	//replaces the .error: function
-		HandleFailure(unreal, data);
-	})
-    .always(function() { 
-		FlashPollingLabel();
-		console.log("ajax PUT call Complete"); 
-	});
-}
+// //	const url = "http://127.0.0.1:7010/remote/object/call";
+// 	const url = "http://10.210.20.24:7010/remote/object/call";
+// //	const url = "http://10.210.20.44:7010/remote/object/call";
+// const pparam = {
+// 		"objectPath" : "/Game/PeetieLevels/UEDPIE_0_00_VirtualSet.00_VirtualSet:PersistentLevel.ChromakeyController"
+// 		,"functionName" : "GetAllParamsFromAllCams"
+// 		,"generateTransaction" : true 
+// 	};
+// //	console.log("client POST: ",url,param);
+// //POST this to our server
+// 	$.ajax({
+//         type: "PUT",
+//         url: url,
+// 		contentType: 'application/json',
+//         dataType: "json",
+// 		data: JSON.stringify(pparam),
+//     })
+// 	.done(function(data) {  //replaces the .success function
+// 		console.log("Received data from Unreal:",data);
+// 		SetUnrealServerStatus(unreal, Online); 
+// 		SetWidgetsAllCams(unreal, data);	//Set the widgets with received data
+// 	})
+//     .fail(function(data) {  	//replaces the .error: function
+// 		HandleFailure(unreal, data);
+// 	})
+//     .always(function() { 
+// 		FlashPollingLabel();
+// 		console.log("ajax PUT call Complete"); 
+// 	});
+// }
 
 //===============================================================================================================
 
@@ -364,15 +362,15 @@ function SendAllParams(unreal, data)
 
 
 
-//====== Send value per type to one Unreal ======
-function SendFloatValue(unreal, camNr, index, value) //camNr, index: integer. value: float
-{
-	SendValue(unreal, 0, camNr, index, parseFloat(value)); //Value must be a float, NOT a string! (I hate weak typing!)
-}
-function SendBoolValue(unreal, camNr, index, value) //camNr, index: integer. value: true or false
-{
-	SendValue(unreal, 1, camNr, index, value);
-}
+// //====== Send value per type to one Unreal ======
+// function SendFloatValue(unreal, camNr, index, value) //camNr, index: integer. value: float
+// {
+// 	SendValue(unreal, 0, camNr, index, parseFloat(value)); //Value must be a float, NOT a string! (I hate weak typing!)
+// }
+// function SendBoolValue(unreal, camNr, index, value) //camNr, index: integer. value: true or false
+// {
+// 	SendValue(unreal, 1, camNr, index, value);
+// }
 function SendColorValue(unreal, camNr, index, value) //camNr, index: integer. value: RGBA array 0->255
 {
 //reformat 8-bit RGBA to 0->1 float values with 3 decimals
@@ -534,12 +532,11 @@ function SetWidgetsAllCams(unreal, data)
 function StartPollingTimer(interval)
 {
 	StopPollingTimer();
-	let intervalId = setInterval(function() {
+	intervalId = setInterval(function() {
 		if(isPolling) {
 			for(tel=1;tel<=numUnreals;tel++) {
 //				console.log("Syncing unreal",tel,"active:",uActive,"Status:",uStatus);
 				SyncAllCamsFromUnreal(tel);
-//				FlashPollingLabel();
 			}
 		}
 	
@@ -796,38 +793,26 @@ function TopPanel(props) {
 		setTheButton(-1); //Reset state to nothing, So we can press the same button again
 	}, [theButton]);
 
-	//This turns checkboxes into radio buttons: Checking one unchecks all others
-	function SetMaster(unreal,checked) {
-		var utel; for(utel=0;utel<numUnreals;utel++) {
-			MasterStates[utel][1](unreal===(utel+1) ? checked : false);
-		}
-		masterUnreal = unreal;
-		console.log("Setting master to:",unreal);
-		//TODO: Read & update from Unreal
-
-	};
-
-	//Set master unreal state as an array of states. Note: No dereferenced arrays here!
+	//Set master unreal state as an array of states. Note: We cannot use dereferenced arrays here!
 	let MasterStates = [useState(true), useState(false), useState(false)];
 	const onMasterChanged = (idStr, checked) => {
 		const unreal = parseInt(idStr.slice(8)); //Master_U1
-		console.log("Master id:",idStr,"unreal:",unreal,"checked:",checked); 
-		SetMaster(unreal,true); //Do not allow to uncheck the checked box
+		//console.log("Master id:",idStr,"unreal:",unreal,"checked:",checked); 
+		SetMaster(unreal,true); //Set to "true" to disallow unchecking the checked button. Set to "checked" to allow unchecking.
 	};
-
-//	This breaks animation in the checkbox widget
-//	Called as: <MasterWidget unreal="1" /> in JSX
-	function MasterWidget(param) {
-		const uStr = param.unreal;
-		const UuStr = "U"+uStr;
-		const unreal = parseInt(uStr);
-		return (
-			<div className="Unreals" id={"Master"+uStr+"_box"}>
-				<ToggleSwitch id={"Master_U"+uStr} checked={MasterStates[unreal-1][0]} onChange={onMasterChanged} optionLabels={[UuStr,uStr]} />
-			</div>
-		);
-	} 
-
+	//setMaster turns togglebuttons into radio-togglebuttons: Checking one unchecks all others
+	//This function is also called in the "Master logic" when enabling/disabling unreals
+	function SetMaster(unreal,checked) {
+		MasterStates[unreal-1][0] = checked; 
+		for(tel=0;tel<numUnreals;tel++) {
+			MasterStates[tel][1](unreal===(tel+1) ? checked : false); //call setState functions for all togglebuttons in the group
+		}
+		masterUnreal = unreal;
+		console.log("Setting master to:",masterUnreal);
+		//Read & update from the new MasterUnreal
+		SyncAllCamsFromUnreal(masterUnreal);
+	};
+	
 	//Enable/disable an unreal state
 	let UnrealStates = [useState(uActive[0]), useState(uActive[1]), useState(uActive[2])];
 	const onUnrealToggleChanged = (idStr, checked) => {
@@ -849,6 +834,19 @@ function TopPanel(props) {
 			}
 		}
 	};
+
+//	Warning: Using a module instead of inline code breaks animation in the ToggleSwitch widget
+//	Called as: <MasterWidget unreal="1" /> in JSX
+	// function MasterWidget(param) {
+	// 	const uStr = param.unreal;
+	// 	const UuStr = "U"+uStr;
+	// 	const um1 = parseInt(uStr) - 1;
+	// 	return (
+	// 		<div className="Unreals" id={"Master"+uStr+"_box"}>
+	// 			<ToggleSwitch id={"Master_U"+uStr} checked={MasterStates[um1][0]} onChange={onMasterChanged} optionLabels={[UuStr,uStr]} />
+	// 		</div>
+	// 	);
+	// } 
 
 	return (
 		<>
@@ -930,11 +928,11 @@ function Slider(props) {
 		// console.log("Slider:",idStr,camNr,index);
 		slidr.oninput = function() {
 			if(IsMinInterval()) { //Regulate sending interval to max 1 per 20ms interval
-				const value = slidr.value;
-				const realVal = value/SlScale;
+				const value = parseFloat(slidr.value);
+				const realVal = value / SlScale;
 				output.innerHTML = ": "+realVal;
 				console.log("Onslider id=",s_IdStr,"value=",realVal);
-				// SendFloatValues(cam, idx, realVal.toFixed(3));
+				SendFloatValues(parseInt(cam), parseInt(idx), realVal.toFixed(3));
 				isPolling = false; //Disable while sliding
 			}
 		}; 
@@ -978,13 +976,12 @@ function Slider(props) {
 
 //Main panel for one camera
 function CamPanel(props) {
-	const cam = props.camIndex;
-	const iCam = parseInt(cam);
-	const cm1 = iCam - 1;
-	var   otherCam = "1";	//the "master" camera to copy settings from (unreal knows this)
-	const idStr1 = "Check_Cam"+cam+"_A";	//Compose id of show alpha switch
-	const idStr2 = "Check_Cam"+cam+"_F";	//Compose id of show unkeyed fill switch
-	var credits; //Different credits per panel
+	const cam = props.camIndex;	//string
+	const iCam = parseInt(cam);	//integer
+	const idStrA = "Check_Cam"+cam+"_A";	//Compose id of show alpha switch
+	const idStrF = "Check_Cam"+cam+"_F";	//Compose id of show unkeyed fill switch
+	var	credits; 		//Different credits per panel
+	var	otherCam = "1";	//the "master" camera to copy settings from (unreal knows this)
 	if(cam==="1")	{
 		credits = <label id="Credits">node.js Server & REACT Webtool by Chris Van den Bossche</label>;
 		otherCam = "2";
@@ -1010,16 +1007,23 @@ function CamPanel(props) {
 				break;
 			default: break;	
 		}
-		if(iCam===2) { //panel 2 position & visibility
-			thePanel.style.left = numCams===3 ? '33%' : '50%';
-			thePanel.style.visibility = numCams>1 ? 'visible' : 'hidden';
+		switch(iCam) {
+			case 1:
+				thePanel.style.left = '0%';
+				break;
+			case 2:
+				thePanel.style.left = numCams===3 ? '33%' : '50%';
+				thePanel.style.visibility = numCams>1 ? 'visible' : 'hidden';
+				break;
+			case 3:
+				thePanel.style.left = '66%';
+				thePanel.style.visibility = numCams===3 ? 'visible' : 'hidden';
+				break;
+			default: break;	
 		}
-		if(iCam===3) { //panel 3 visibility
-			thePanel.style.visibility = numCams===3 ? 'visible' : 'hidden';
-		}
-	}, [cam]);
+	}, [cam, iCam]);
 
-	//Buttons pressed
+	//Callback for buttons pressed
 	let [theButton, setTheButton] = useState(-1); //Which button pressed? (0->n)
 	useEffect(() => {
 		if(theButton>=0) console.log(`Button ${theButton} pressed.`);
@@ -1042,25 +1046,24 @@ function CamPanel(props) {
 			}
 		}
 		setTheButton(-1); //Reset state to nothing, So we can press the same button again
-	}, [theButton]);
+	}, [theButton, cam, iCam, otherCam]);
 
-	//Enable/disable a key state
-	let AlphaStates = [useState(alphaState[0]), useState(alphaState[1]), useState(alphaState[2])];
-	let FillStates  = [useState( fillState[0]), useState( fillState[1]), useState( fillState[2])];
+	//Enable/disable a chromakey option
+	let[alphaState,setAlphaState] = useState(false);//show alpha
+	let[fillState,setFillState] = useState(false);	//show unkeyed fill	
 	const onKeyToggleChanged = (idStr, checked) => {
 		console.log("Switch",idStr,"is",checked);
-		if(idStr.slice(11)==="A") { //Check_Cam1_A
-			alphaState[cm1] = checked;
-			AlphaStates[cm1][1](checked);
-			SendBoolValues(parseInt(cam), 0, checked);
+		if(idStr.slice(11)==="A") { //alpha: Check_Cam1_A
+			alphaState = checked;
+			setAlphaState(checked);
+			SendBoolValues(iCam, 0, checked);
 		}
-		if(idStr.slice(11)==="F") { //Check_Cam1_F
-			fillState[cm1] = checked;
-			FillStates[cm1][1](checked); 
-			SendBoolValues(parseInt(cam), 0, checked);
+		if(idStr.slice(11)==="F") { //fill: Check_Cam2_F
+			fillState = checked;
+			setFillState(checked);
+			SendBoolValues(iCam, 1, checked);
 		}
 	};
-
 
 	return (
 		<div className="MainPanel" id={"CamPanel"+cam}>
@@ -1080,16 +1083,16 @@ function CamPanel(props) {
 				<Slider camN={cam} title="Preblur Samples"		index="1"	min="1" max="32" step="3" />
 				<div className="colorGroup">
 					<div className="inlineGroup">
-						<label className="LabelText" htmlFor="ColorWheel">Key Color:</label>
+						<label className="LabelText" htmlFor="ColorWheel">Key<br/>Color:</label>
 
 					</div>	
 					<div className="inlineGroup">
-						<label className="LabelText" htmlFor="ColorWheel"> Show Alpha:</label>
-						<ToggleSwitch id={idStr1} checked={AlphaStates[cm1][0]} onChange={onKeyToggleChanged} optionLabels={["On","Off"]}/>
+						<label className="LabelText" htmlFor="ColorWheel">Show<br/>Alpha:</label>
+						<ToggleSwitch id={idStrA} checked={alphaState} onChange={onKeyToggleChanged} optionLabels={["On","Off"]}/>
 					</div>
 					<div className="inlineGroup">
-						<label className="LabelText" htmlFor="ColorWheel"> Unkeyed Fill :</label>
-						<ToggleSwitch id={idStr2} checked= {FillStates[cm1][0]} onChange={onKeyToggleChanged} optionLabels={["On","Off"]}/>
+						<label className="LabelText" htmlFor="ColorWheel">Show Unkeyed<br/>Fill :</label>
+						<ToggleSwitch id={idStrF} checked= {fillState} onChange={onKeyToggleChanged} optionLabels={["On","Off"]}/>
 					</div>
 					<button id={"View_Cam"+cam}  className="button button1" onClick={() => setTheButton(0)}>{"View CAM "+cam}</button>
 				</div>
