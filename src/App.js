@@ -2,7 +2,7 @@ import React, {useState, useEffect} from "react";
 import $ from 'jquery';
 import './App.css';
 import './Buttons.css';
-import './Sliders.css';
+import {Slider, SetSlider} from './Sliders/Sliders';
 import ToggleSwitch from './ToggleSwitch/ToggleSwitch';
 import './MiniColors/minicolors';
 
@@ -43,8 +43,6 @@ const nodeServerIP = "localhost:8800";
 const numFloats = 23;
 const numBools = 2;
 const numColors = 2;
-//Slider scale factor
-const SlScale = 1000.0;
 
 //Status symbols
 const Online = Symbol("Unreal_Online");
@@ -386,14 +384,14 @@ function SendColorValue(unreal, camNr, index, value) //camNr, index: integer. va
 	SendValue(unreal, 2, camNr, index, {R:parseFloat(pR), G:parseFloat(pG), B:parseFloat(pB), A:parseFloat(pA)}); 
 }
 
-
-
 //====== Send value per type to all unreals ======
 function SendFloatValues(camNr, index, value) //camNr, index: integer. value: float
 {
-	console.log("Sending values cam",camNr,"index",index,"to:",value);
-	for(unreal=1;unreal<=numUnreals;unreal++) {
-		SendValue(unreal, 0, camNr, index, parseFloat(value)); //Value must be a float, NOT a string! (I hate weak typing!)
+	if(IsMinInterval()) { //Regulate sending interval to max 1 per 20ms interval
+		console.log("Sending values cam",camNr,"index",index,"to:",value);
+		for(unreal=1;unreal<=numUnreals;unreal++) {
+			SendValue(unreal, 0, camNr, index, parseFloat(value)); //Value must be a float, NOT a string! (I hate weak typing!)
+	 	}
 	}
 }
 function SendBoolValues(camNr, index, value) //camNr, index: integer. value: true or false
@@ -448,43 +446,30 @@ function CopyMasterToOthers()
                                                                                            
 //==================================================================================================
 
-//====== Set one slider widget value ======
-function SetSliderWidget(camNr,index,value)
+function SetSliderWidget(camNr,index,floatValue)
 {
-//Slider label	
-	//s_cam1_lbl5
-	const output = document.getElementById("s_cam"+camNr+"_lbl"+index);
-	if(output) {
-		output.innerHTML = ": "+value; //label
-//slider thumb position
-		//s_cam1_sl6		
-		const input = document.getElementById("s_cam"+camNr+"_sl"+index);
-		if(input) {
-			input.value = value * SlScale;
-		}
-	}
+	SetSlider(camNr,index,floatValue); //defined in Slider.js
 }
 
 //====== Set one checkbox widget on/off (view alpha, view unkeyed) ======
-function SetCheckboxWidget(camNr,index,value)
+function SetCheckboxWidget(camNr,index,boolValue)
 {
 	//Check_Cam1_0
-	$("#Check_Cam"+camNr+"_"+index).prop("checked",value); //Set checked prop using jquery (just for fun)
+	$("#Check_Cam"+camNr+"_"+index).prop("checked",boolValue); //Set checked prop using jquery (just for fun)
 	// document.getElementById("Check_Cam"+camNr+"_"+index).checked = value; //Set checked prop using normal js
 }
 
 //====== Set one color widget RGB value ======
-function SetColorWidget(camNr,index,value)
+function SetColorWidget(camNr,index,colorValue)
 {
-	//Color_Cam1_0
-	if(value) {
-		const id = "#Color_Cam"+camNr+"_"+index;
+	colorUpdate = false; //Do not send color back to unreal!
+	if(colorValue) {
 		//Convert color components from float 0->1 to integer 0->255
-		const R = Math.round(value.R*255);
-		const G = Math.round(value.G*255);
-		const B = Math.round(value.B*255);
+		const R = Math.round(colorValue.R*255);
+		const G = Math.round(colorValue.G*255);
+		const B = Math.round(colorValue.B*255);
 		const rgb = "rgb("+R+","+G+","+B+")";
-		$(id).minicolors('value',rgb);
+		$("#Color_Cam"+camNr+"_"+index).minicolors('value',rgb); 	//Color_Cam1_0
 	}
 }
 
@@ -509,10 +494,10 @@ function SetWidgetsAllCams(unreal, data)
 				// if(numCams>=4) SetCheckboxWidget(4,tel,data.Bools4[tel]); //TODO: Add Cam4 in unreal
 			}
 			for(tel=0;tel<numColors;tel++) {
-				if(numCams>=1) {colorUpdate = false; SetColorWidget(1,tel,data.Colors1[tel]);}
-				if(numCams>=2) {colorUpdate = false; SetColorWidget(2,tel,data.Colors2[tel]);}
-				if(numCams>=3) {colorUpdate = false; SetColorWidget(3,tel,data.Colors3[tel]);}
-				// if(numCams>=4) {colorUpdate = false; SetColorWidget(4,tel,data.Colors4[tel]);} //TODO: Add Cam4 in unreal
+				if(numCams>=1) {SetColorWidget(1,tel,data.Colors1[tel]);}
+				if(numCams>=2) {SetColorWidget(2,tel,data.Colors2[tel]);}
+				if(numCams>=3) {SetColorWidget(3,tel,data.Colors3[tel]);}
+				// if(numCams>=4) {SetColorWidget(4,tel,data.Colors4[tel]);} //TODO: Add Cam4 in unreal
 			}
 			setTimeout(function() { //Sync with a small delay to allow unreal to execute 
 				colorUpdate = true; //otherwise we miss the first color change
@@ -686,7 +671,7 @@ function SetUnrealServerStatus(unreal, status, blink=false)
 			for(tel=0;tel<numUnreals;tel++) {
 				if(uActive[tel] && uStatus[tel]===Online) isOnline = true;
 			}
-	//		console.log("IsOnline unreal"+unreal,"is",isOnline);
+			console.log("IsOnline unreal"+unreal,"is",isOnline);
 			for(tel=1;tel<=numCams;tel++) {
 				const cover = document.getElementById("Cover"+tel);
 				if(cover) { //Hide cover if unreal online to enable widget use
@@ -785,12 +770,22 @@ function TopPanel(props) {
 	useEffect(() => {
 		if(theButton>=0) console.log(`Button ${theButton} pressed.`);
 		switch(theButton) {
-			case 0:
+			case 0: //Copy Master
 				CopyMasterToOthers();
 				break;
-			case 1:
+			case 1: //HELP
 				ShowHelp();
 				break;
+			case 2: //test1
+				SetSliderWidget(1,5,0.5);
+				SetCheckboxWidget(1,0,true);
+				SetColorWidget(1,0,{R:0.1,G:1,B:0.2});
+				break;	
+			case 3: //test2
+				SetSliderWidget(1,5,0);
+				SetCheckboxWidget(1,0,false);
+				SetColorWidget(1,0,{R:0,G:0,B:0});
+				break;	
 			default: break;	
 		}
 		setTheButton(-1); //Reset state to nothing, So we can press the same button again
@@ -860,7 +855,7 @@ function TopPanel(props) {
 					<div className="TopPanel">
 						<label id="TitleLabel">Unreal Chromakey Control Panel</label>
 						<div className="popup">
-							<button id="But1" className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
+							<button className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
 							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
 						</div>	
 
@@ -888,10 +883,12 @@ function TopPanel(props) {
 							<div className="Unreals" id="Master2_box">
 								<ToggleSwitch id="Master_U2" checked={MasterStates[1][0]} onChange={onMasterChanged} optionLabels={["U2","2"]} />
 							</div>	
-							<button id="But0" className="button button1" onClick={() => setTheButton(0)}>Copy Master to Others</button>
+							<button className="button button1" onClick={() => setTheButton(0)}>Copy Master to Others</button>
 						</div>
+						<button className="button button1" onClick={() => setTheButton(2)}>TEST1</button>
+						<button className="button button1" onClick={() => setTheButton(3)}>TEST2</button>
 						<div className="popup">
-							<button id="But1" className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
+							<button className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
 							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
 						</div>	
 
@@ -929,10 +926,10 @@ function TopPanel(props) {
 							<div className="Unreals" id="Master3_box">
 								<ToggleSwitch id="Master_U3" checked={MasterStates[2][0]} onChange={onMasterChanged} optionLabels={["U3","3"]} />
 							</div>
-							<button id="But0" className="button button1" onClick={() => setTheButton(0)}>Copy Master to Others</button>
+							<button className="button button1" onClick={() => setTheButton(0)}>Copy Master to Others</button>
 						</div>
 						<div className="popup">
-							<button id="But1" className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
+							<button className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
 							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
 						</div>	
 
@@ -969,63 +966,6 @@ function TopPanel(props) {
 //==========================================================================================================================
 
 
-//One slider with parameters
-function Slider(props) {
-	const cam = props.camN;			//Camera nr
-	const idx = props.index;			//Index number in unreal float array order
-	const min = parseInt(props.min);	//Real minimum value (integer)
-	const minSc= min * SlScale; 		//minimum in slider range
-	const max  = parseInt(props.max);	//real maximum value (integer)
-	const maxSc= max * SlScale;			//maximum in slider range
-	const step = parseFloat(props.step);	//Real step value (float!)
-	const style={"--step":step, "--min":min, "--max":max, "--default":0, "--width":99}; //The style object
-	const s_IdStr = "s_cam"+cam+"_sl"+idx;	//Compose Id of this slider to get the object
-	const s_IdStrL= "s_cam"+cam+"_lbl"+idx;	//Compose Id of the label to show the value
-
-
-	useEffect(() => {
-		console.log("==> Init slider CAM"+cam,"nr",idx);
-		const slidr = document.getElementById(s_IdStr);
-		const output= document.getElementById(s_IdStrL);
-		output.innerHTML=": 0";	//Slider label init
-		slidr.value = "0";
-		// console.log("Slider:",idStr,camNr,index);
-		slidr.oninput = function() {
-			if(IsMinInterval()) { //Regulate sending interval to max 1 per 20ms interval
-				const value = parseFloat(slidr.value);
-				const realVal = value / SlScale;
-				output.innerHTML = ": "+realVal;
-				// console.log("Onslider id=",s_IdStr,"value=",realVal);
-				SendFloatValues(parseInt(cam), parseInt(idx), realVal.toFixed(3));
-				isPolling = false; //Disable while sliding
-			}
-		}; 
-		// slidr.onmouseover = function() { //obsolete
-		// 	isPolling = false;
-		// };
-		slidr.onmouseout = function() {
-			isPolling = true;
-		};
-	}, [s_IdStr,s_IdStrL,cam,idx]);
-
-	return (
-		<>
-			<label className="LabelText">{props.title}</label>
-			<label className="LabelValue" id={s_IdStrL}>: 0</label>
-			<div className="range" style={style}>
-				<input 
-					//Do NOT pass a value here. This makes the component "controlled" and blocks slider movement
-					type="range" 
-					className="slider" 
-					min={minSc} 
-					max={maxSc}
-					step="1"
-					id={s_IdStr}
-				/>
-			</div>
-		</>
-	);
-}
 
 //==========================================================================================================================
 
@@ -1086,8 +1026,9 @@ function CamPanel(props) {
 				},
 				theme: 'default'
 			});
-		});
+		}, []);
 
+		
 		//Camera panel width, position, visibility
 		const thePanel = document.getElementById("CamPanel"+cam);
 		//Made for up to 4 cameras
@@ -1167,22 +1108,26 @@ function CamPanel(props) {
 		}
 	};
 
+	//Sliders
+	const onSlide = (cam,index,value) => SendFloatValues(cam,index,value);
+	const onPoll = (val) => isPolling = val;
+
 	return (
 		<div className="MainPanel" id={"CamPanel"+cam}>
 			<h3 className="CamHdr">{"CAM "+cam+": Chromakey"}</h3>
 			<div className="sliderGroup">
-				<Slider camN={cam} title="Chroma Minimum" 		index="5"	min="0" 	max="1"		step="0.1"	/>
-				<Slider camN={cam} title="Chroma Gain" 			index="6"	min="0" 	max="8"		step="0.5"	/>
-				<Slider camN={cam} title="Alpha Bias" 			index="9"	min="0" 	max="1"		step="0.1"	/>
-				<Slider camN={cam} title="Luma Log Minimum" 	index="10"	min="0" 	max="5"		step="0.5"	/>
-				<Slider camN={cam} title="Luma Log Gain" 		index="11"	min="0" 	max="4"		step="0.4"	/>
-				<Slider camN={cam} title="Black Clip" 			index="7"	min="0" 	max="100"	step="10"	/>
-				<Slider camN={cam} title="White Clip" 			index="8"	min="0"		max="100"	step="10"	/>
-				<Slider camN={cam} title="Devignette Inner"		index="2"	min="-1"	max="1"		step="0.1"	/>
-				<Slider camN={cam} title="Devignette Outer"		index="3"	min="0"		max="2"		step="0.1"	/>
-				<Slider camN={cam} title="Devignette Amount"	index="4"	min="0"		max="2"		step="0.1"	/>
-				<Slider camN={cam} title="Preblur Strength"		index="0"	min="0"		max="8"		step="1"	/>
-				<Slider camN={cam} title="Preblur Samples"		index="1"	min="1"		max="32"	step="3"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Chroma Minimum" 		index="5"	min="0" 	max="1"		step="0.1"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Chroma Gain" 			index="6"	min="0" 	max="8"		step="0.5"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Alpha Bias" 			index="9"	min="0" 	max="1"		step="0.1"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Luma Log Minimum" 	index="10"	min="0" 	max="5"		step="0.5"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Luma Log Gain" 		index="11"	min="0" 	max="4"		step="0.4"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Black Clip" 			index="7"	min="0" 	max="100"	step="10"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="White Clip" 			index="8"	min="0"		max="100"	step="10"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Devignette Inner"		index="2"	min="-1"	max="1"		step="0.1"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Devignette Outer"		index="3"	min="0"		max="2"		step="0.1"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Devignette Amount"	index="4"	min="0"		max="2"		step="0.1"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Preblur Strength"		index="0"	min="0"		max="8"		step="1"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Preblur Samples"		index="1"	min="1"		max="32"	step="3"	/>
 				<div className="colorGroup">
 					<div className="inlineGroup">
 						<label className="LabelText" htmlFor="ColorWheel">Key Color:<br/></label>
@@ -1202,13 +1147,13 @@ function CamPanel(props) {
 			<hr style={{"height":"6px", "borderWidth":"1px", "borderColor":"black", "backgroundColor":"#020"}}/>
 			<h3 className="CamHdr">{"CAM "+cam+": Despill & Post process"}</h3>
 			<div className="sliderGroup">
-				<Slider camN={cam} title="Despill Amount" 		index="16"	min="0"		max="2" 	step="0.1"	/>
-				<Slider camN={cam} title="Hue Range" 			index="17"	min="0"		max="1" 	step="0.1"	/>
-				<Slider camN={cam} title="Fill Gain" 			index="18"	min="0"		max="2" 	step="0.1"	/>
-				<Slider camN={cam} title="Fill Pedestal"		index="19"	min="-2"	max="2" 	step="0.2"	/>
-				<Slider camN={cam} title="Fill Gamma" 			index="20"	min="0"		max="2" 	step="0.1"	/>
-				<Slider camN={cam} title="Fill Saturation"		index="21"	min="-1"	max="2" 	step="0.2"	/>
-				<Slider camN={cam} title="Sky Amount" 			index="22"	min="0"		max="1" 	step="0.1"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Despill Amount" 		index="16"	min="0"		max="2" 	step="0.1"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Hue Range" 			index="17"	min="0"		max="1" 	step="0.1"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Fill Gain" 			index="18"	min="0"		max="2" 	step="0.1"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Fill Pedestal"		index="19"	min="-2"	max="2" 	step="0.2"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Fill Gamma" 			index="20"	min="0"		max="2" 	step="0.1"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Fill Saturation"		index="21"	min="-1"	max="2" 	step="0.2"	/>
+				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Sky Amount" 			index="22"	min="0"		max="1" 	step="0.1"	/>
 				<div className="colorGroup">
 					<div className="inlineGroup">
 						<label className="LabelText" htmlFor="ColorWheel">Sky Color:<br/></label>
