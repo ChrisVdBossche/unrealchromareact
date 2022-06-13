@@ -1,9 +1,11 @@
 import React, {useState, useEffect} from "react";
+import $ from 'jquery';
 import './App.css';
 import './Buttons.css';
 import './Sliders.css';
 import ToggleSwitch from './ToggleSwitch/ToggleSwitch';
-import $ from 'jquery';
+import './MiniColors/minicolors';
+
 
 //==================================================================================================
 
@@ -458,7 +460,7 @@ function SetSliderWidget(camNr,index,value)
 		//s_cam1_sl6		
 		const input = document.getElementById("s_cam"+camNr+"_sl"+index);
 		if(input) {
-			input.value = value*SlScale;
+			input.value = value * SlScale;
 		}
 	}
 }
@@ -467,7 +469,8 @@ function SetSliderWidget(camNr,index,value)
 function SetCheckboxWidget(camNr,index,value)
 {
 	//Check_Cam1_0
-//	$("#Check_Cam"+camNr+"_"+index).netlivaSwitch('state',value);
+	$("#Check_Cam"+camNr+"_"+index).prop("checked",value); //Set checked prop using jquery (just for fun)
+	// document.getElementById("Check_Cam"+camNr+"_"+index).checked = value; //Set checked prop using normal js
 }
 
 //====== Set one color widget RGB value ======
@@ -481,7 +484,7 @@ function SetColorWidget(camNr,index,value)
 		const G = Math.round(value.G*255);
 		const B = Math.round(value.B*255);
 		const rgb = "rgb("+R+","+G+","+B+")";
-		//$(id).minicolors('value',rgb);
+		$(id).minicolors('value',rgb);
 	}
 }
 
@@ -491,30 +494,29 @@ function SetWidgetsAllCams(unreal, data)
 	if(unreal===masterUnreal) {
 		if(data.Valid) {
 			masterData = data;
-	//		console.log("Received valid data:",data); 
+			// console.log("Received valid data:",data); 
 			//Set the widget values
 			for(tel=0;tel<numFloats;tel++) {
-				SetSliderWidget(1,tel,data.Floats1[tel]);
-				SetSliderWidget(2,tel,data.Floats2[tel]);
-				SetSliderWidget(3,tel,data.Floats3[tel]); //TODO: Cam3
+				if(numCams>=1) SetSliderWidget(1,tel,data.Floats1[tel]);
+				if(numCams>=2) SetSliderWidget(2,tel,data.Floats2[tel]);
+				if(numCams>=3) SetSliderWidget(3,tel,data.Floats3[tel]);
+				// if(numCams>=4) SetSliderWidget(4,tel,data.Floats4[tel]); //TODO: Add Cam4 in unreal 
 			}
 			for(tel=0;tel<numBools;tel++) {
-				SetCheckboxWidget(1,tel,data.Bools1[tel]);
-				SetCheckboxWidget(2,tel,data.Bools2[tel]);
-				SetCheckboxWidget(3,tel,data.Bools3[tel]); //TODO: Cam3
+				if(numCams>=1) SetCheckboxWidget(1,tel,data.Bools1[tel]);
+				if(numCams>=2) SetCheckboxWidget(2,tel,data.Bools2[tel]);
+				if(numCams>=3) SetCheckboxWidget(3,tel,data.Bools3[tel]);
+				// if(numCams>=4) SetCheckboxWidget(4,tel,data.Bools4[tel]); //TODO: Add Cam4 in unreal
 			}
 			for(tel=0;tel<numColors;tel++) {
-				colorUpdate = false; 
-				SetColorWidget(1,tel,data.Colors1[tel]);
-				colorUpdate = false;
-				SetColorWidget(2,tel,data.Colors2[tel]);
-				colorUpdate = false;
-				SetColorWidget(3,tel,data.Colors3[tel]); //TODO: Cam3
+				if(numCams>=1) {colorUpdate = false; SetColorWidget(1,tel,data.Colors1[tel]);}
+				if(numCams>=2) {colorUpdate = false; SetColorWidget(2,tel,data.Colors2[tel]);}
+				if(numCams>=3) {colorUpdate = false; SetColorWidget(3,tel,data.Colors3[tel]);}
+				// if(numCams>=4) {colorUpdate = false; SetColorWidget(4,tel,data.Colors4[tel]);} //TODO: Add Cam4 in unreal
 			}
 			setTimeout(function() { //Sync with a small delay to allow unreal to execute 
 				colorUpdate = true; //otherwise we miss the first color change
 			}, 100);
-	
 		} else {
 			console.log("Invalid data received from Unreal");
 		}
@@ -1038,10 +1040,10 @@ function Slider(props) {
 
 //Main panel for one camera
 function CamPanel(props) {
-	const cam = props.camIndex;	//string
+	const cam = props.camNr;	//string
 	const iCam = parseInt(cam);	//integer
-	const idStrA = "Check_Cam"+cam+"_A";	//Compose id of show alpha switch
-	const idStrF = "Check_Cam"+cam+"_F";	//Compose id of show unkeyed fill switch
+	const toggleId = ["Check_Cam"+cam+"_0","Check_Cam"+cam+"_1"];	//Compose ids of show alpha & show unkeyed fill switches
+	const colorId  = ["Color_Cam"+cam+"_0","Color_Cam"+cam+"_1"];	//Compose ids of minicolor boxes
 	var	credits; 		//Different credits per panel
 	var	otherCam = "1";	//the "master" camera to copy settings from (unreal knows this)
 	if(cam==="1")	{
@@ -1054,6 +1056,37 @@ function CamPanel(props) {
 	//This code is called on initialisation of the component
 	useEffect(() => {
 		console.log("==> Initializing CAM"+cam+" panel...");
+
+		//Init minicolors
+		$('.form-control').each( function() {
+			$(this).minicolors({
+				control: $(this).attr('data-control') || 'wheel',
+				position: $(this).attr('data-position') || 'top',
+				format: $(this).attr('data-format') || 'rgb',
+				letterCase: $(this).attr('data-letterCase') || 'lowercase',
+				// defaultValue: $(this).attr('data-defaultValue') || '',
+				// keywords: $(this).attr('data-keywords') || '',
+				// inline: $(this).attr('data-inline') === 'true',
+				// opacity: $(this).attr('data-opacity'),
+				swatches: $(this).attr('data-swatches') ? $(this).attr('data-swatches').split('|') : [],  
+				change: function(color, opacity) {
+				try {
+					if(IsMinInterval() && colorUpdate) { //Regulate sending interval to max 1 per 20ms interval
+						const index = parseInt(String($(this).prop("id")).slice(-1)); 	//Get index nr
+						const camNr = parseInt(String($(this).prop("id")).slice(9,10)); 	//Get camera nr
+						console.log("Cam: " + camNr + " Index: " + index + " = " + color);
+						var values = color.replace(/[^\d,.]/g, ''); //Strip the "rgb(...)" (regex taken from minicolors.js)
+						var rgba = values.split(','); 				//Split values in array
+			//			console.log("rgb= ",rgba);
+						rgba[3] = opacity*255; //opacity is already 0->1
+						SendColorValues(camNr, index, rgba);
+					}
+					colorUpdate = true; //re-enable colorupdate
+				} catch(e) {}
+				},
+				theme: 'default'
+			});
+		});
 
 		//Camera panel width, position, visibility
 		const thePanel = document.getElementById("CamPanel"+cam);
@@ -1097,8 +1130,8 @@ function CamPanel(props) {
 	useEffect(() => {
 		if(theButton>=0) console.log(`Button ${theButton} pressed.`);
 //Do for all unreals	
-			for(unreal=1;unreal<=numUnreals;unreal++) {
-				switch(theButton) {
+		for(unreal=1;unreal<=numUnreals;unreal++) {
+			switch(theButton) {
 				case 0:
 					console.log("U"+unreal,"Show cam",cam);
 					SwitchToCam(unreal,iCam);
@@ -1122,12 +1155,12 @@ function CamPanel(props) {
 	let[fillState,setFillState] = useState(false);	//show unkeyed fill	
 	const onKeyToggleChanged = (idStr, checked) => {
 		console.log("Switch",idStr,"is",checked);
-		if(idStr.slice(11)==="A") { //alpha: Check_Cam1_A
+		if(idStr.slice(11)==="0") { //alpha: Check_Cam1_0
 			alphaState = checked;
 			setAlphaState(checked);
 			SendBoolValues(iCam, 0, checked);
 		}
-		if(idStr.slice(11)==="F") { //fill: Check_Cam2_F
+		if(idStr.slice(11)==="1") { //fill: Check_Cam2_1
 			fillState = checked;
 			setFillState(checked);
 			SendBoolValues(iCam, 1, checked);
@@ -1138,30 +1171,30 @@ function CamPanel(props) {
 		<div className="MainPanel" id={"CamPanel"+cam}>
 			<h3 className="CamHdr">{"CAM "+cam+": Chromakey"}</h3>
 			<div className="sliderGroup">
-				<Slider camN={cam} title="Chroma Minimum" 		index="5"	min="0" max="1" step="0.1" />
-				<Slider camN={cam} title="Chroma Gain" 			index="6"	min="0" max="8" step="0.5" />
-				<Slider camN={cam} title="Alpha Bias" 			index="9"	min="0" max="1" step="0.1" />
-				<Slider camN={cam} title="Luma Log Minimum" 	index="10"	min="0" max="5" step="0.5" />
-				<Slider camN={cam} title="Luma Log Gain" 		index="11"	min="0" max="4" step="0.4" />
-				<Slider camN={cam} title="Black Clip" 			index="7"	min="0" max="100" step="10" />
-				<Slider camN={cam} title="White Clip" 			index="8"	min="0" max="100" step="10" />
-				<Slider camN={cam} title="Devignette Inner"		index="2"	min="-1" max="1" step="0.1" />
-				<Slider camN={cam} title="Devignette Outer"		index="3"	min="0" max="2" step="0.1" />
-				<Slider camN={cam} title="Devignette Amount"	index="4"	min="0" max="2" step="0.1" />
-				<Slider camN={cam} title="Preblur Strength"		index="0"	min="0" max="8" step="1" />
-				<Slider camN={cam} title="Preblur Samples"		index="1"	min="1" max="32" step="3" />
+				<Slider camN={cam} title="Chroma Minimum" 		index="5"	min="0" 	max="1"		step="0.1"	/>
+				<Slider camN={cam} title="Chroma Gain" 			index="6"	min="0" 	max="8"		step="0.5"	/>
+				<Slider camN={cam} title="Alpha Bias" 			index="9"	min="0" 	max="1"		step="0.1"	/>
+				<Slider camN={cam} title="Luma Log Minimum" 	index="10"	min="0" 	max="5"		step="0.5"	/>
+				<Slider camN={cam} title="Luma Log Gain" 		index="11"	min="0" 	max="4"		step="0.4"	/>
+				<Slider camN={cam} title="Black Clip" 			index="7"	min="0" 	max="100"	step="10"	/>
+				<Slider camN={cam} title="White Clip" 			index="8"	min="0"		max="100"	step="10"	/>
+				<Slider camN={cam} title="Devignette Inner"		index="2"	min="-1"	max="1"		step="0.1"	/>
+				<Slider camN={cam} title="Devignette Outer"		index="3"	min="0"		max="2"		step="0.1"	/>
+				<Slider camN={cam} title="Devignette Amount"	index="4"	min="0"		max="2"		step="0.1"	/>
+				<Slider camN={cam} title="Preblur Strength"		index="0"	min="0"		max="8"		step="1"	/>
+				<Slider camN={cam} title="Preblur Samples"		index="1"	min="1"		max="32"	step="3"	/>
 				<div className="colorGroup">
 					<div className="inlineGroup">
-						<label className="LabelText" htmlFor="ColorWheel">Key<br/>Color:</label>
-
+						<label className="LabelText" htmlFor="ColorWheel">Key Color:<br/></label>
+						<input type="text" id={colorId[0]} className="form-control demo col_wheel" data-control="wheel" data-format="rgb" defaultValue="rgb(0,0,0)" />
 					</div>	
 					<div className="inlineGroup">
-						<label className="LabelText" htmlFor="ColorWheel">Show<br/>Alpha:</label>
-						<ToggleSwitch id={idStrA} checked={alphaState} onChange={onKeyToggleChanged} optionLabels={["On","Off"]}/>
+						<label className="LabelText" htmlFor="ColorWheel">Show Alpha:<br/></label>
+						<ToggleSwitch id={toggleId[0]} checked={alphaState} onChange={onKeyToggleChanged} optionLabels={["On","Off"]}/>
 					</div>
 					<div className="inlineGroup">
-						<label className="LabelText" htmlFor="ColorWheel">Show Unkeyed<br/>Fill :</label>
-						<ToggleSwitch id={idStrF} checked= {fillState} onChange={onKeyToggleChanged} optionLabels={["On","Off"]}/>
+						<label className="LabelText" htmlFor="ColorWheel">Show Unkeyed:<br/></label>
+						<ToggleSwitch id={toggleId[1]} checked= {fillState} onChange={onKeyToggleChanged} optionLabels={["On","Off"]}/>
 					</div>
 					<button id={"View_Cam"+cam}  className="button button1" onClick={() => setTheButton(0)}>{"View CAM "+cam}</button>
 				</div>
@@ -1169,17 +1202,17 @@ function CamPanel(props) {
 			<hr style={{"height":"6px", "borderWidth":"1px", "borderColor":"black", "backgroundColor":"#020"}}/>
 			<h3 className="CamHdr">{"CAM "+cam+": Despill & Post process"}</h3>
 			<div className="sliderGroup">
-				<Slider camN={cam} title="Despill Amount" 		index="16"	min="0" max="2" step="0.1" />
-				<Slider camN={cam} title="Hue Range" 			index="17"	min="0" max="1" step="0.1" />
-				<Slider camN={cam} title="Fill Gain" 			index="18"	min="0" max="2" step="0.1" />
-				<Slider camN={cam} title="Fill Pedestal"		index="19"	min="-2" max="2" step="0.2" />
-				<Slider camN={cam} title="Fill Gamma" 			index="20"	min="0" max="2" step="0.1" />
-				<Slider camN={cam} title="Fill Saturation"		index="21"	min="-1" max="2" step="0.2" />
-				<Slider camN={cam} title="Sky Amount" 			index="22"	min="0" max="1" step="0.1" />
+				<Slider camN={cam} title="Despill Amount" 		index="16"	min="0"		max="2" 	step="0.1"	/>
+				<Slider camN={cam} title="Hue Range" 			index="17"	min="0"		max="1" 	step="0.1"	/>
+				<Slider camN={cam} title="Fill Gain" 			index="18"	min="0"		max="2" 	step="0.1"	/>
+				<Slider camN={cam} title="Fill Pedestal"		index="19"	min="-2"	max="2" 	step="0.2"	/>
+				<Slider camN={cam} title="Fill Gamma" 			index="20"	min="0"		max="2" 	step="0.1"	/>
+				<Slider camN={cam} title="Fill Saturation"		index="21"	min="-1"	max="2" 	step="0.2"	/>
+				<Slider camN={cam} title="Sky Amount" 			index="22"	min="0"		max="1" 	step="0.1"	/>
 				<div className="colorGroup">
 					<div className="inlineGroup">
-						<label className="LabelText" htmlFor="ColorWheel">Sky Color:</label>
-
+						<label className="LabelText" htmlFor="ColorWheel">Sky Color:<br/></label>
+						<input type="text" id={colorId[1]} className="form-control demo col_wheel" defaultValue="rgb(0,0,0)" />
 					</div>	
 					<button id={"CopyFrom_Cam"+cam}  className="button button1" onClick={() => setTheButton(1)}>{"Copy From CAM "+otherCam}</button>
 					<button id={"Default_Cam"+cam}   className="button button1" onClick={() => setTheButton(2)}>Default values</button>
@@ -1191,49 +1224,48 @@ function CamPanel(props) {
 	);
 }
 
-function ThePanel(props) {
+//Our main app function
+export default function theApp(props) {
 	switch(numCams) { //conditional camera panels
 		case 1:
 			return (
 				<>
 					<TopPanel />
-					<CamPanel camIndex="1"/>
+					<CamPanel camNr="1"/>
 				</>
 			);
 		case 2:
 			return (
 				<>
 					<TopPanel />
-					<CamPanel camIndex="1"/>
-					<CamPanel camIndex="2"/>
+					<CamPanel camNr="1"/>
+					<CamPanel camNr="2"/>
 				</>
 			);
 		case 3:
 			return (
 				<>
 					<TopPanel />
-					<CamPanel camIndex="1"/>
-					<CamPanel camIndex="2"/>
-					<CamPanel camIndex="3"/>
+					<CamPanel camNr="1"/>
+					<CamPanel camNr="2"/>
+					<CamPanel camNr="3"/>
 				</>
 			);
 		case 4:
 			return (
 				<>
 					<TopPanel />
-					<CamPanel camIndex="1"/>
-					<CamPanel camIndex="2"/>
-					<CamPanel camIndex="3"/>
-					<CamPanel camIndex="4"/>
+					<CamPanel camNr="1"/>
+					<CamPanel camNr="2"/>
+					<CamPanel camNr="3"/>
+					<CamPanel camNr="4"/>
 				</>
 			);
 		default:
-		return (
-			<>
-				<TopPanel />
-			</>
-		);
+			return (
+				<>
+					<TopPanel />
+				</>
+			);
 	}
 }
-
-export default ThePanel;
