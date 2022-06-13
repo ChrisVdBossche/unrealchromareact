@@ -1,10 +1,13 @@
-//
 // jQuery MiniColors: A tiny color picker built on jQuery
-//
 // Developed by Cory LaViska for A Beautiful Site, LLC
-//
 // Licensed under the MIT license: http://opensource.org/licenses/MIT
 //
+
+//CVDB: Import additional objects from jquery ($ is already imported in main app)
+import define from 'jquery';
+import jQuery from 'jquery';
+import './minicolors.css';
+
 (function (factory) {
   if(typeof define === 'function' && define.amd) {
     // AMD. Register as an anonymous module.
@@ -17,7 +20,7 @@
     factory(jQuery);
   }
 }(function ($) {
-  'use strict';
+//  'use strict';
 
   // Defaults
   $.minicolors = {
@@ -436,7 +439,7 @@
             s: saturation,
             b: brightness
           });
- 
+
           // Update UI
           slider.css('backgroundColor', hsb2hex({ h: hue, s: saturation, b: 100 }));
           break;
@@ -1109,6 +1112,7 @@
           hide();
           input.blur();
           break;
+		default:break;  
       }
     })
     // Update on keyup
