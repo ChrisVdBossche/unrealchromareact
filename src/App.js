@@ -24,7 +24,7 @@ const maxUnreals = 3;
 //How many unreal servers are actually used? (1 -> maxUnreals)
 const numUnreals = 2;
 //How many cameras are actually in use for each unreal server? (1 -> 4)
-const numCams = 2;
+const numCams = 3;
 
 //unreal server status (unreal 1-2-3)
 var uStatus = new Array(maxUnreals);	//unreal status
@@ -676,9 +676,9 @@ function SetUnrealServerStatus(unreal, status, blink=false)
 			for(tel=1;tel<=numCams;tel++) {
 				const cover = document.getElementById("Cover"+tel);
 				if(cover) { //Hide cover if unreal online to enable widget use
-					// cover.style.display = isOnline?"none":"block"; 
-					// if(tel===1) cover.style.display = isOnline?"none":"none"; 
-					cover.style.display = "none";
+					cover.style.display = isOnline?"none":"block"; 
+					if(tel===1) cover.style.display = isOnline?"none":"none"; 
+					// cover.style.display = "none";
 				}
 			}
 			oldStatus[um1] = status;
@@ -833,19 +833,6 @@ function TopPanel(props) {
 			}
 		}
 	};
-
-//	Warning: Using a component instead of inline code breaks animation in the ToggleSwitch widget!
-//	Called as: <MasterWidget unreal="1" /> in JSX
-	// function MasterWidget(param) {
-	// 	const uStr = param.unreal;
-	// 	const UuStr = "U"+uStr;
-	// 	const um1 = parseInt(uStr) - 1;
-	// 	return (
-	// 		<div className="Unreals" id={"Master"+uStr+"_box"}>
-	// 			<ToggleSwitch id={"Master_U"+uStr} checked={MasterStates[um1][0]} onChange={onMasterChanged} optionLabels={[UuStr,uStr]} />
-	// 		</div>
-	// 	);
-	// } 
 
 	switch(numUnreals) {
 		//================================ 1 unreal ==============================
@@ -1158,7 +1145,18 @@ function CamPanel(props) {
 		</div>
 	);
 }
-//id={"View_Cam"+cam} 
+
+//==========================================================================================================================
+
+// .88b  d88.  .d8b.  d888888b d8b   db      .d8b.  d8888b. d8888b. 
+// 88'YbdP`88 d8' `8b   `88'   888o  88     d8' `8b 88  `8D 88  `8D 
+// 88  88  88 88ooo88    88    88V8o 88     88ooo88 88oodD' 88oodD' 
+// 88  88  88 88~~~88    88    88 V8o88     88~~~88 88~~~   88~~~   
+// 88  88  88 88   88   .88.   88  V888     88   88 88      88      
+// YP  YP  YP YP   YP Y888888P VP   V8P     YP   YP 88      88      
+
+//==========================================================================================================================
+
 //Our main app function
 export default function theApp(props) {
 	switch(numCams) { //conditional camera panels
@@ -1200,6 +1198,7 @@ export default function theApp(props) {
 			return (
 				<>
 					<TopPanel />
+					<br/><br/><label id="TitleLabel">No chromakey panels available</label>
 				</>
 			);
 	}
