@@ -1,10 +1,11 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useRef} from "react";
 import $ from 'jquery';
 import './App.css';
 import './Buttons.css';
+import MyButton from './Buttons/Buttons'
 import {Slider, SetSlider} from './Sliders/Sliders';
 import ToggleSwitch from './ToggleSwitch/ToggleSwitch';
-import './MiniColors/minicolors';
+import './MiniColors/minicolors'; //Not (yet) a react component
 
 
 //==================================================================================================
@@ -367,7 +368,7 @@ function SendAllParams(unreal, data)
 // //====== Send value per type to one Unreal (obsolete) ======
 // function SendFloatValue(unreal, camNr, index, value) //camNr, index: integer. value: float
 // {
-// 	SendValue(unreal, 0, camNr, index, parseFloat(value)); //Value must be a float, NOT a string! (I hate weak typing!)
+// 	SendValue(unreal, 0, camNr, index, parseFloat(value)); //value must be a float, NOT a string! (I hate weak typing!)
 // }
 // function SendBoolValue(unreal, camNr, index, value) //camNr, index: integer. value: true or false
 // {
@@ -388,11 +389,11 @@ function SendColorValue(unreal, camNr, index, value) //camNr, index: integer. va
 function SendFloatValues(camNr, index, value) //camNr, index: integer. value: float
 {
 	if(IsMinInterval()) { //Regulate sending interval to max 1 per 20ms interval
-		console.log("Sending values cam",camNr,"index",index,"to:",value);
+		console.log("Slider cam",camNr,"index",index,"to:",value);
 		for(unreal=1;unreal<=numUnreals;unreal++) {
 			SendValue(unreal, 0, camNr, index, parseFloat(value)); //Value must be a float, NOT a string! (I hate weak typing!)
 	 	}
-	}
+	} //else console.log("Out of interval");
 }
 function SendBoolValues(camNr, index, value) //camNr, index: integer. value: true or false
 {
@@ -855,7 +856,7 @@ function TopPanel(props) {
 					<div className="TopPanel">
 						<label id="TitleLabel">Unreal Chromakey Control Panel</label>
 						<div className="popup">
-							<button className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
+							<MyButton styl="button1" onClick={() => setTheButton(1)} value="H E L P"/>
 							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
 						</div>	
 
@@ -883,12 +884,13 @@ function TopPanel(props) {
 							<div className="Unreals" id="Master2_box">
 								<ToggleSwitch id="Master_U2" checked={MasterStates[1][0]} onChange={onMasterChanged} optionLabels={["U2","2"]} />
 							</div>	
-							<button className="button button1" onClick={() => setTheButton(0)}>Copy Master to Others</button>
+							<MyButton styl="button1" onClick={() => setTheButton(0)} value="Copy Master to Others"/>
 						</div>
-						<button className="button button1" onClick={() => setTheButton(2)}>TEST1</button>
-						<button className="button button1" onClick={() => setTheButton(3)}>TEST2</button>
+						<MyButton styl="button1" onClick={() => setTheButton(2)} value="TEST1"/>
+						<MyButton styl="button1" onClick={() => setTheButton(3)} value="TEST2"/>
+						{/* <MyButton styl="button1" onClick={() => setTheButton(4)} value="TEST3"/> */}
 						<div className="popup">
-							<button className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
+							<MyButton styl="button1" onClick={() => setTheButton(1)} value="H E L P"/>
 							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
 						</div>	
 
@@ -926,10 +928,10 @@ function TopPanel(props) {
 							<div className="Unreals" id="Master3_box">
 								<ToggleSwitch id="Master_U3" checked={MasterStates[2][0]} onChange={onMasterChanged} optionLabels={["U3","3"]} />
 							</div>
-							<button className="button button1" onClick={() => setTheButton(0)}>Copy Master to Others</button>
+							<MyButton styl="button1" onClick={() => setTheButton(0)} value="Copy Master to Others"/>
 						</div>
 						<div className="popup">
-							<button className="button button1" onClick={() => setTheButton(1)}>H E L P</button>
+							<MyButton styl="button1" onClick={() => setTheButton(1)} value="H E L P"/>
 							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
 						</div>	
 
@@ -956,19 +958,6 @@ function TopPanel(props) {
 
 //==========================================================================================================================
 
-// .d8888. db      d888888b d8888b. d88888b d8888b. 
-// 88'  YP 88        `88'   88  `8D 88'     88  `8D 
-// `8bo.   88         88    88   88 88ooooo 88oobY' 
-//   `Y8b. 88         88    88   88 88~~~~~ 88`8b   
-// db   8D 88booo.   .88.   88  .8D 88.     88 `88. 
-// `8888Y' Y88888P Y888888P Y8888D' Y88888P 88   YD 
-                                                                                                  
-//==========================================================================================================================
-
-
-
-//==========================================================================================================================
-
 //  .o88b.  .d8b.  .88b  d88.     d8888b.  .d8b.  d8b   db d88888b db      
 // d8P  Y8 d8' `8b 88'YbdP`88     88  `8D d8' `8b 888o  88 88'     88      
 // 8P      88ooo88 88  88  88     88oodD' 88ooo88 88V8o 88 88ooooo 88      
@@ -992,6 +981,7 @@ function CamPanel(props) {
 	} else {
 		credits = <label id="Credits">© 2022 VRT ELAN</label>;
 	}
+	const panelRef = useRef(null);
 
 	//This code is called on initialisation of the component
 	useEffect(() => {
@@ -1030,7 +1020,7 @@ function CamPanel(props) {
 
 		
 		//Camera panel width, position, visibility
-		const thePanel = document.getElementById("CamPanel"+cam);
+		const thePanel = panelRef.current;
 		//Made for up to 4 cameras
 		switch(numCams) { //all panels width
 			case 1:
@@ -1064,7 +1054,7 @@ function CamPanel(props) {
 				break;
 			default: break;	
 		}
-	}, [cam, iCam]);
+	}, [panelRef, cam, iCam]);
 
 	//Callback for buttons pressed
 	let [theButton, setTheButton] = useState(-1); //Which button pressed? (0->n)
@@ -1091,7 +1081,7 @@ function CamPanel(props) {
 		setTheButton(-1); //Reset state to nothing, So we can press the same button again
 	}, [theButton, cam, iCam, otherCam]);
 
-	//Enable/disable a chromakey option
+	//Togglebuttons (Enable/disable a chromakey option)
 	let[alphaState,setAlphaState] = useState(false);//show alpha
 	let[fillState,setFillState] = useState(false);	//show unkeyed fill	
 	const onKeyToggleChanged = (idStr, checked) => {
@@ -1108,26 +1098,26 @@ function CamPanel(props) {
 		}
 	};
 
-	//Sliders
-	const onSlide = (cam,index,value) => SendFloatValues(cam,index,value);
-	const onPoll = (val) => isPolling = val;
+	//Slider callbacks
+	const onSl = (cam,index,value) => SendFloatValues(cam,index,value);
+	const onPl = (val) => isPolling = val;
 
 	return (
-		<div className="MainPanel" id={"CamPanel"+cam}>
+		<div className="MainPanel" ref={panelRef}>
 			<h3 className="CamHdr">{"CAM "+cam+": Chromakey"}</h3>
 			<div className="sliderGroup">
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Chroma Minimum" 		index="5"	min="0" 	max="1"		step="0.1"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Chroma Gain" 			index="6"	min="0" 	max="8"		step="0.5"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Alpha Bias" 			index="9"	min="0" 	max="1"		step="0.1"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Luma Log Minimum" 	index="10"	min="0" 	max="5"		step="0.5"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Luma Log Gain" 		index="11"	min="0" 	max="4"		step="0.4"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Black Clip" 			index="7"	min="0" 	max="100"	step="10"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="White Clip" 			index="8"	min="0"		max="100"	step="10"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Devignette Inner"		index="2"	min="-1"	max="1"		step="0.1"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Devignette Outer"		index="3"	min="0"		max="2"		step="0.1"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Devignette Amount"	index="4"	min="0"		max="2"		step="0.1"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Preblur Strength"		index="0"	min="0"		max="8"		step="1"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Preblur Samples"		index="1"	min="1"		max="32"	step="3"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Chroma Minimum"		index="5"	min="0" 	max="1"		step="0.1"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Chroma Gain"		index="6"	min="0" 	max="8"		step="0.5"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Alpha Bias"			index="9"	min="0" 	max="1"		step="0.1"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Luma Log Minimum"	index="10"	min="0" 	max="5"		step="0.5"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Luma Log Gain"		index="11"	min="0" 	max="4"		step="0.4"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Black Clip"			index="7"	min="0" 	max="100"	step="10"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="White Clip"			index="8"	min="0"		max="100"	step="10"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Devignette Inner"	index="2"	min="-1"	max="1"		step="0.2"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Devignette Outer"	index="3"	min="0"		max="2"		step="0.2"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Devignette Amount"	index="4"	min="0"		max="2"		step="0.1"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Preblur Strength"	index="0"	min="0"		max="8"		step="1"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Preblur Samples"	index="1"	min="2"		max="32"	step="2"	/>
 				<div className="colorGroup">
 					<div className="inlineGroup">
 						<label className="LabelText" htmlFor="ColorWheel">Key Color:<br/></label>
@@ -1138,29 +1128,29 @@ function CamPanel(props) {
 						<ToggleSwitch id={toggleId[0]} checked={alphaState} onChange={onKeyToggleChanged} optionLabels={["On","Off"]}/>
 					</div>
 					<div className="inlineGroup">
-						<label className="LabelText" htmlFor="ColorWheel">Show Unkeyed:<br/></label>
+						<label className="LabelText" htmlFor="ColorWheel">Unkeyed Fill:<br/></label>
 						<ToggleSwitch id={toggleId[1]} checked= {fillState} onChange={onKeyToggleChanged} optionLabels={["On","Off"]}/>
 					</div>
-					<button id={"View_Cam"+cam}  className="button button1" onClick={() => setTheButton(0)}>{"View CAM "+cam}</button>
+					<MyButton styl="button1" onClick={() => setTheButton(0)} value={"View CAM "+cam}/> 
 				</div>
 			</div>
 			<hr style={{"height":"6px", "borderWidth":"1px", "borderColor":"black", "backgroundColor":"#020"}}/>
 			<h3 className="CamHdr">{"CAM "+cam+": Despill & Post process"}</h3>
 			<div className="sliderGroup">
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Despill Amount" 		index="16"	min="0"		max="2" 	step="0.1"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Hue Range" 			index="17"	min="0"		max="1" 	step="0.1"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Fill Gain" 			index="18"	min="0"		max="2" 	step="0.1"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Fill Pedestal"		index="19"	min="-2"	max="2" 	step="0.2"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Fill Gamma" 			index="20"	min="0"		max="2" 	step="0.1"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Fill Saturation"		index="21"	min="-1"	max="2" 	step="0.2"	/>
-				<Slider onSl={onSlide} onP={onPoll} camN={cam} title="Sky Amount" 			index="22"	min="0"		max="1" 	step="0.1"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Despill Amount"		index="16"	min="0"		max="2" 	step="0.1"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Hue Range"			index="17"	min="0"		max="1" 	step="0.1"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Fill Gain"			index="18"	min="0"		max="2" 	step="0.1"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Fill Pedestal"		index="19"	min="-2"	max="2" 	step="0.2"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Fill Gamma"			index="20"	min="0"		max="2" 	step="0.1"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Fill Saturation"	index="21"	min="-1"	max="2" 	step="0.2"	/>
+				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Sky Amount"			index="22"	min="0"		max="1" 	step="0.1"	/>
 				<div className="colorGroup">
 					<div className="inlineGroup">
 						<label className="LabelText" htmlFor="ColorWheel">Sky Color:<br/></label>
 						<input type="text" id={colorId[1]} className="form-control demo col_wheel" defaultValue="rgb(0,0,0)" />
 					</div>	
-					<button id={"CopyFrom_Cam"+cam}  className="button button1" onClick={() => setTheButton(1)}>{"Copy From CAM "+otherCam}</button>
-					<button id={"Default_Cam"+cam}   className="button button1" onClick={() => setTheButton(2)}>Default values</button>
+					<MyButton styl="button1" onClick={() => setTheButton(1)} value={"Copy From CAM "+otherCam} />
+					<MyButton styl="button1" onClick={() => setTheButton(2)} value="Default values" />
 				</div>
 				<div className="CoverPanel" id={"Cover"+cam}></div>
 			</div>
@@ -1168,7 +1158,7 @@ function CamPanel(props) {
 		</div>
 	);
 }
-
+//id={"View_Cam"+cam} 
 //Our main app function
 export default function theApp(props) {
 	switch(numCams) { //conditional camera panels
