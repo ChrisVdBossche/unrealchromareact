@@ -24,7 +24,7 @@ const maxUnreals = 3;
 //How many unreal servers are actually used? (1 -> maxUnreals)
 const numUnreals = 2;
 //How many cameras are actually in use for each unreal server? (1 -> 4)
-const numCams = 3;
+const numCams = 2;
 
 //unreal server status (unreal 1-2-3)
 var uStatus = new Array(maxUnreals);	//unreal status
@@ -88,11 +88,21 @@ for(tel=0;tel<maxUnreals;tel++) {
 }
 
 //===== Initially activate an Unreal ==========
-//uActive[0] = true;	//server 1 active on startup
+uActive[0] = true;	//server 1 active on startup
 //uActive[1] = true;	//server 2 active on startup
 //uActive[2] = true;	//server 3 active on startup
 
 //===== Initialize client panel ===============
+
+//Set unreal on/off checkbox initial position
+SetUnrealCheckboxWidgets();
+
+//Get Initial status from server
+//console.log("Initial Syncing:\nuActive:",uActive,"\nuStatus:",uStatus);
+for(tel=1;tel<=numUnreals;tel++) {
+	SyncAllCamsFromUnreal(tel);
+}
+
 console.log("Starting timers...");
 //Sync every few seconds so we always have unreal status
 StartPollingTimer(PollingInterval);
@@ -303,9 +313,9 @@ function CallFunction2(unreal, pType, pData) //An object: pData
 // function SyncFromUnrealDirect(unreal) //unrealnr: 1-based
 // {
 
-// //	const url = "http://127.0.0.1:7010/remote/object/call";
-// 	const url = "http://10.210.20.24:7010/remote/object/call";
-// //	const url = "http://10.210.20.44:7010/remote/object/call";
+// //	const url = "http://127.0.0.1:30010/remote/object/call";
+// 	const url = "http://D26763:30010/remote/object/call";
+// //	const url = "http://10.210.20.44:30010/remote/object/call";
 // const pparam = {
 // 		"objectPath" : "/Game/PeetieLevels/UEDPIE_0_00_VirtualSet.00_VirtualSet:PersistentLevel.ChromakeyController"
 // 		,"functionName" : "GetAllParamsFromAllCams"
@@ -458,6 +468,14 @@ function SetCheckboxWidget(camNr,index,boolValue)
 	//Check_Cam1_0
 	$("#Check_Cam"+camNr+"_"+index).prop("checked",boolValue); //Set checked prop using jquery (just for fun)
 	// document.getElementById("Check_Cam"+camNr+"_"+index).checked = value; //Set checked prop using normal js
+}
+
+//====== Set Unreal 1,2,3 server checkboxes on/off at startup ======
+function SetUnrealCheckboxWidgets()
+{
+	for(unreal=1;unreal<=numUnreals;unreal++) {
+		if(masterUnreal===0 && uActive[unreal-1]) onMasterChanged(unreal); 
+	}
 }
 
 //====== Set one color widget RGB value ======
@@ -677,7 +695,7 @@ function SetUnrealServerStatus(unreal, status, blink=false)
 				const cover = document.getElementById("Cover"+tel);
 				if(cover) { //Hide cover if unreal online to enable widget use
 					cover.style.display = isOnline?"none":"block"; 
-					if(tel===1) cover.style.display = isOnline?"none":"none"; 
+					// if(tel===1) cover.style.display = isOnline?"none":"none"; 
 					// cover.style.display = "none";
 				}
 			}
@@ -755,6 +773,12 @@ function ShowHelp() {
                                                                        
 //==========================================================================================================================
 
+function onMasterChanged(unreal) {
+	masterUnreal = unreal;
+	console.log("Setting master to:",masterUnreal);
+	//Read & update from the new MasterUnreal
+	SyncAllCamsFromUnreal(masterUnreal);
+}
 
 function TopPanel(props) {
 	//This code is called on initialisation of the component
@@ -806,10 +830,7 @@ function TopPanel(props) {
 		for(tel=0;tel<numUnreals;tel++) {
 			MasterStates[tel][1](unreal===(tel+1) ? checked : false); //call setState functions for all togglebuttons in the group
 		}
-		masterUnreal = unreal;
-		console.log("Setting master to:",masterUnreal);
-		//Read & update from the new MasterUnreal
-		SyncAllCamsFromUnreal(masterUnreal);
+		onMasterChanged(unreal);
 	};
 	
 	//Enable/disable an unreal state
@@ -820,6 +841,7 @@ function TopPanel(props) {
 		const um1 = unreal-1;
 		uActive[um1] = checked;
 		UnrealStates[um1][1](checked);
+		SyncAllCamsFromUnreal(unreal);
 		//Master unreal logic, to ensure the master is always an active unreal.
 		if(checked && (masterUnreal===0 || (masterUnreal>0 && !uActive[masterUnreal-1]))) { //Set this as master
 			SetMaster(unreal,true);
@@ -873,9 +895,8 @@ function TopPanel(props) {
 							</div>	
 							<MyButton styl="button1" onClick={() => setTheButton(0)} value="Copy Master to Others"/>
 						</div>
-						<MyButton styl="button1" onClick={() => setTheButton(2)} value="TEST1"/>
-						<MyButton styl="button1" onClick={() => setTheButton(3)} value="TEST2"/>
-						{/* <MyButton styl="button1" onClick={() => setTheButton(4)} value="TEST3"/> */}
+						{/* <MyButton styl="button1" onClick={() => setTheButton(2)} value="TEST1"/>
+						<MyButton styl="button1" onClick={() => setTheButton(3)} value="TEST2"/> */}
 						<div className="popup">
 							<MyButton styl="button1" onClick={() => setTheButton(1)} value="H E L P"/>
 							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
