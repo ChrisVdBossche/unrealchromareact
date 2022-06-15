@@ -157,7 +157,7 @@ h3 {
 .popup .popuptext {
 	--block-width: 405px;  
 	visibility: hidden;
-	opacity:85%;
+	/* opacity:85%; */
 	width: var(--block-width);
 	margin-left: calc(-14px - var(--block-width)); 
 	background-image: linear-gradient(rgb(223, 239, 250), rgb(85, 182, 247));

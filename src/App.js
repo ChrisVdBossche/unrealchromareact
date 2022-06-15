@@ -301,49 +301,6 @@ function CallFunction2(unreal, pType, pData) //An object: pData
 	});
 }
 
-// //TEST TEST TEST TEST TEST TEST TEST TEST TEST
-// function TestGet(unreal)
-// {
-// 	console.log("Test");
-// }
-
-
-// //TEST TEST TEST TEST TEST TEST TEST TEST TEST
-// //Send "get all params" directly to Unreal
-// function SyncFromUnrealDirect(unreal) //unrealnr: 1-based
-// {
-
-// //	const url = "http://127.0.0.1:30010/remote/object/call";
-// 	const url = "http://D26763:30010/remote/object/call";
-// //	const url = "http://10.210.20.44:30010/remote/object/call";
-// const pparam = {
-// 		"objectPath" : "/Game/PeetieLevels/UEDPIE_0_00_VirtualSet.00_VirtualSet:PersistentLevel.ChromakeyController"
-// 		,"functionName" : "GetAllParamsFromAllCams"
-// 		,"generateTransaction" : true 
-// 	};
-// //	console.log("client POST: ",url,param);
-// //POST this to our server
-// 	$.ajax({
-//         type: "PUT",
-//         url: url,
-// 		contentType: 'application/json',
-//         dataType: "json",
-// 		data: JSON.stringify(pparam),
-//     })
-// 	.done(function(data) {  //replaces the .success function
-// 		console.log("Received data from Unreal:",data);
-// 		SetUnrealServerStatus(unreal, Online); 
-// 		SetWidgetsAllCams(unreal, data);	//Set the widgets with received data
-// 	})
-//     .fail(function(data) {  	//replaces the .error: function
-// 		HandleFailure(unreal, data);
-// 	})
-//     .always(function() { 
-// 		FlashPollingLabel();
-// 		console.log("ajax PUT call Complete"); 
-// 	});
-// }
-
 //===============================================================================================================
 
 // .d8888. d88888b d8b   db d8888b. d88888b db    db d8b   db  .o88b. d888888b d888888b  .d88b.  d8b   db .d8888. 
@@ -375,22 +332,14 @@ function SendAllParams(unreal, data)
 
 
 
-// //====== Send value per type to one Unreal (obsolete) ======
-// function SendFloatValue(unreal, camNr, index, value) //camNr, index: integer. value: float
-// {
-// 	SendValue(unreal, 0, camNr, index, parseFloat(value)); //value must be a float, NOT a string! (I hate weak typing!)
-// }
-// function SendBoolValue(unreal, camNr, index, value) //camNr, index: integer. value: true or false
-// {
-// 	SendValue(unreal, 1, camNr, index, value);
-// }
+//====== Send color value to one Unreal ======
 function SendColorValue(unreal, camNr, index, value) //camNr, index: integer. value: RGBA array 0->255
 {
 //reformat 8-bit RGBA to 0->1 float values with 3 decimals
-	var pR=(value[0]/255).toFixed(3)
-	  , pG=(value[1]/255).toFixed(3)
-	  , pB=(value[2]/255).toFixed(3)
-	  , pA=(value[3]/255).toFixed(3); 
+	const pR=(value[0]/255).toFixed(3)
+		, pG=(value[1]/255).toFixed(3)
+		, pB=(value[2]/255).toFixed(3)
+		, pA=(value[3]/255).toFixed(3); 
 //Make color components into object, converted to floats
 	SendValue(unreal, 2, camNr, index, {R:parseFloat(pR), G:parseFloat(pG), B:parseFloat(pB), A:parseFloat(pA)}); 
 }
@@ -417,6 +366,8 @@ function SendColorValues(camNr, index, value) //camNr, index: integer. value: RG
 		SendColorValue(unreal, camNr, index, value);
 	}
 }
+
+
 
 
 //====== Conditional sync ==============
@@ -741,7 +692,7 @@ const theHelpFile = <>
 	Useful to set green removal. (Despill Amount)<br/>
 	<b>View Cam 1/2:</b> Switch Unreal to this camera.<br/>
 	<br/>
-	<span style={{color:'blue'}}><b><u>Despill / post processor settings:</u></b><br/></span>
+	<span style={{color:'blue'}}><b><u>Despill & post processor settings:</u></b><br/></span>
 	<b>Despill Amount:</b> neutralizing keycolor amount in fill<br/>
 	<b>Hue Range:</b> Range of keycolor neutralizing in fill<br/>
 	<b>Fill Gain:</b> Fill signal white level<br/>
@@ -753,7 +704,7 @@ const theHelpFile = <>
 	<br/><b>Copy from CAM 1/2:</b> Copy all settings from the other camera to this camera.<br/>
 	<b>Default values:</b> Reset all settings to the Unreal defaults.<br/>
 	<br/>
-	<span style={{color:'red'}}><b>Warning:</b> The copy/default buttons overwrite all settings.</span><br/>
+	<span style={{color:'#A00'}}><b>Warning:</b> The copy/default buttons overwrite all settings.</span><br/>
 	<br/>Click <b>HELP</b> again to hide.
 </>
 
