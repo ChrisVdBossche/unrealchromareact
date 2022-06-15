@@ -1,0 +1,7 @@
+{
+	"nodeServerIP": "http://D26763:8800",
+	"numUnreals": 2,
+	"numCams": 2,
+	"UnrealActiveOnStartup": [true,false,false],
+	"PollingSeconds": 5
+}

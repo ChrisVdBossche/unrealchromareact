@@ -69,7 +69,7 @@
 }
 
 /*Panel with widgets for one camera*/
-.MainPanel {
+.CamPanel {
 	width: 48%;		/* entire panel width 2 panels */
 	background-image: linear-gradient(#102A10, #202020);
 	position: absolute;

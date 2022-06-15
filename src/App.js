@@ -5,7 +5,7 @@ import {Slider, SetSlider} from './Sliders/Sliders';
 import MyButton from './Buttons/Buttons'
 import ToggleSwitch from './ToggleSwitch/ToggleSwitch';
 import './MiniColors/minicolors'; //Not (yet) a react component
-
+import configData from "./config.json"; //config datafile
 
 //==================================================================================================
 
@@ -21,9 +21,11 @@ import './MiniColors/minicolors'; //Not (yet) a react component
 const maxUnreals = 3;
 
 //How many unreal servers are actually used? (1 -> maxUnreals)
-const numUnreals = 2;
+const numUnreals = configData.numUnreals;
 //How many cameras are actually in use for each unreal server? (1 -> 4)
-const numCams = 2;
+const numCams = configData.numCams;
+//Node.js server that translates unreal commands
+const nodeServerIP = configData.nodeServerIP;
 
 //unreal server status (unreal 1-2-3)
 var uStatus = new Array(maxUnreals);	//unreal status
@@ -36,8 +38,6 @@ var masterData;		//Remember data from master, to send to other unreals
 var alphaState = new Array(maxUnreals); 
 var fillState = new Array(maxUnreals);
 
-//Node.js server that translates unreal commands
-const nodeServerIP = "D26763:8800";
 
 //Amount of Unreal controlling widgets
 const numFloats = 23;
@@ -60,7 +60,7 @@ var intervalId = null;  //ID for polling
 var blinkingId = null;  //ID for blinking
 var startTime = Date.now();
 const minInterval = 20; //Shortest interval to send commands (20ms is our 50fps TV time-quantum)
-const PollingInterval = 5000; //Auto-refresh timers in ms
+const PollingInterval = configData.PollingSeconds * 1000 + 200; //Auto-refresh timers in ms
 const BlinkTimer = 400;	//Blinking alerts
 var BlinkOn = true;	//Color on or off
 var isPolling = true;  //Interval polling enabled or not
@@ -81,15 +81,10 @@ var tel,unreal;
 //====== Initializing Globals ======
 for(tel=0;tel<maxUnreals;tel++) {
 	uStatus[tel] =  Unknown;
-	uActive[tel] =  false;
+	uActive[tel] =  configData.UnrealActiveOnStartup[tel];
 	alphaState[tel] = false;
 	fillState[tel] = false;
 }
-
-//===== Initially activate an Unreal ==========
-uActive[0] = true;	//server 1 active on startup
-//uActive[1] = true;	//server 2 active on startup
-//uActive[2] = true;	//server 3 active on startup
 
 //===== Initialize client panel ===============
 
@@ -163,7 +158,7 @@ function SendValue(unreal, pType, pCamNr, pIndex, pValue)  //unrealnr, camnr: 1-
 {
 	const um1 = unreal-1;
 	if(!uActive[um1] || uStatus[um1]!==Online) return; //unreal not active and online
-	const url = "http://" + nodeServerIP + "/SetValue";
+	const url = nodeServerIP + "/SetValue";
 	
 	const param = {
 		unrealServer:unreal,
@@ -200,7 +195,7 @@ function SyncFromUnreal(unreal) //unrealnr: 1-based
 	const um1 = unreal-1;
 	if(!uActive[um1]) return; //Skip if Unreal not active
 
-	const url = "http://" + nodeServerIP + "/GetAllValues";
+	const url = nodeServerIP + "/GetAllValues";
 
 	const param = {
 		unrealServer:unreal
@@ -236,7 +231,7 @@ function CallFunction(unreal, pType, pCamNr) //A single integer: Camera nr
 	const um1 = unreal-1;
 	if(!uActive[um1] || uStatus[um1]!==Online) return; //unreal not active and online
 
-	const url = "http://" + nodeServerIP + "/CallFunction";
+	const url = nodeServerIP + "/CallFunction";
 	
 	const param = {
 		unrealServer:unreal,
@@ -272,7 +267,7 @@ function CallFunction2(unreal, pType, pData) //An object: pData
 	const um1 = unreal-1;
 	if(!uActive[um1] || uStatus[um1]!==Online) return; //unreal not active and online
 
-	const url = "http://" + nodeServerIP + "/CallFunction2";
+	const url = nodeServerIP + "/CallFunction2";
 	
 	const param = {
 		unrealServer:unreal,
@@ -714,6 +709,62 @@ function ShowHelp() {
 
 //==========================================================================================================================
 
+// .d8888. d88888b d888888b d888888b d888888b d8b   db  d888b  .d8888. 
+// 88'  YP 88'     `~~88~~' `~~88~~'   `88'   888o  88 88' Y8b 88'  YP 
+// `8bo.   88ooooo    88       88       88    88V8o 88 88      `8bo.   
+//   `Y8b. 88~~~~~    88       88       88    88 V8o88 88  ooo   `Y8b. 
+// db   8D 88.        88       88      .88.   88  V888 88. ~8~ db   8D 
+// `8888Y' Y88888P    YP       YP    Y888888P VP   V8P  Y888P  `8888Y' 
+                                                                    
+//==========================================================================================================================
+
+function ShowSettings() {
+	document.getElementById("settings_Popup").classList.toggle("show");
+}
+
+function SettingsPanel() {
+	const UrlRef = useRef(null);
+	//This code is called on initialisation of the component
+	useEffect(() => {
+		console.log("==> Initializing settings panel...");
+		const theInput = UrlRef.current;
+		theInput.value = configData.nodeServerIP;
+	}, [UrlRef]);
+
+	//Buttons pressed
+	let [theButton, setTheButton] = useState(-1); //Which button pressed? (0->n)
+	useEffect(() => {
+		if(theButton>=0) console.log(`Settings Button ${theButton} pressed.`);
+		switch(theButton) {
+			case 0: //Cancel button
+				ShowSettings();
+				break;
+			case 1: //Apply button
+					const theInput = UrlRef.current;
+					configData.nodeServerIP = "";
+					console.log(theInput.value);
+//					window.location.reload(true);
+			break;
+			default: break;	
+		}
+		setTheButton(-1); //Reset state to nothing, So we can press the same button again
+	}, [UrlRef, theButton]);
+
+	return (
+		<span className="popuptext" id="settings_Popup">
+			<h2>Settings</h2>
+				<label id="SettingsLabel">Node Server URL:</label>
+				<input type="url" id="UrlBox" ref={UrlRef}/>
+				<br/>
+				<MyButton styl="button1" onClick={() => setTheButton(0)} value="Cancel"/>
+				<MyButton styl="button1" onClick={() => setTheButton(1)} value="Apply"/>
+			{/* <br/>Click <b>Settings</b> again to close Settings. */}
+		</span>
+	);
+}
+
+//==========================================================================================================================
+
 // d888888b  .d88b.  d8888b.     d8888b.  .d8b.  d8b   db d88888b db      
 // `~~88~~' .8P  Y8. 88  `8D     88  `8D d8' `8b 888o  88 88'     88      
 //    88    88    88 88oodD'     88oodD' 88ooo88 88V8o 88 88ooooo 88      
@@ -743,7 +794,7 @@ function TopPanel(props) {
 	//Buttons pressed
 	let [theButton, setTheButton] = useState(-1); //Which button pressed? (0->n)
 	useEffect(() => {
-		if(theButton>=0) console.log(`Button ${theButton} pressed.`);
+		if(theButton>=0) console.log(`TopPanel Button ${theButton} pressed.`);
 		switch(theButton) {
 			case 0: //Copy Master
 				CopyMasterToOthers();
@@ -751,12 +802,15 @@ function TopPanel(props) {
 			case 1: //HELP
 				ShowHelp();
 				break;
-			case 2: //test1
+			case 2: //Settings
+				ShowSettings();
+				break;
+			case 3: //test1
 				SetSliderWidget(1,5,0.5);
 				SetCheckboxWidget(1,0,true);
 				SetColorWidget(1,0,{R:0.1,G:1,B:0.2});
 				break;	
-			case 3: //test2
+			case 4: //test2
 				SetSliderWidget(1,5,0);
 				SetCheckboxWidget(1,0,false);
 				SetColorWidget(1,0,{R:0,G:0,B:0});
@@ -815,6 +869,7 @@ function TopPanel(props) {
 					<div className="TopPanel">
 						<label id="TitleLabel">Unreal Chromakey Control Panel</label>
 						<div className="popup">
+							{/* <MyButton styl="button1" onClick={() => setTheButton(2)} value="Settings"/> */}
 							<MyButton styl="button1" onClick={() => setTheButton(1)} value="H E L P"/>
 							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
 						</div>	
@@ -848,6 +903,8 @@ function TopPanel(props) {
 						{/* <MyButton styl="button1" onClick={() => setTheButton(2)} value="TEST1"/>
 						<MyButton styl="button1" onClick={() => setTheButton(3)} value="TEST2"/> */}
 						<div className="popup">
+							<MyButton styl="button1" onClick={() => setTheButton(2)} value="Settings"/>
+							<SettingsPanel/>
 							<MyButton styl="button1" onClick={() => setTheButton(1)} value="H E L P"/>
 							<span className="popuptext" id="help_Popup">{theHelpFile}</span>
 						</div>	
@@ -1017,7 +1074,7 @@ function CamPanel(props) {
 	//Callback for buttons pressed
 	let [theButton, setTheButton] = useState(-1); //Which button pressed? (0->n)
 	useEffect(() => {
-		if(theButton>=0) console.log(`Button ${theButton} pressed.`);
+		if(theButton>=0) console.log(`CamPanel Button ${theButton} pressed.`);
 //Do for all unreals	
 		for(unreal=1;unreal<=numUnreals;unreal++) {
 			switch(theButton) {
@@ -1061,7 +1118,7 @@ function CamPanel(props) {
 	const onPl = (val) => isPolling = val;
 
 	return (
-		<div className="MainPanel" ref={panelRef}>
+		<div className="CamPanel" ref={panelRef}>
 			<h3 className="CamHdr">{"CAM "+cam+": Chromakey"}</h3>
 			<div className="sliderGroup">
 				<Slider onSlide={onSl} onPoll={onPl} group={cam} title="Chroma Minimum"		index="5"	min="0" 	max="1"		step="0.1"	/>
