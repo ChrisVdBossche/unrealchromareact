@@ -1,9 +1,8 @@
-import React, {useState, useEffect, useRef} from "react";
-import $ from 'jquery';
 import './App.css';
-import './Buttons.css';
-import MyButton from './Buttons/Buttons'
+import {React, useState, useEffect, useRef} from "react";
+import $ from 'jquery';
 import {Slider, SetSlider} from './Sliders/Sliders';
+import MyButton from './Buttons/Buttons'
 import ToggleSwitch from './ToggleSwitch/ToggleSwitch';
 import './MiniColors/minicolors'; //Not (yet) a react component
 
@@ -38,7 +37,7 @@ var alphaState = new Array(maxUnreals);
 var fillState = new Array(maxUnreals);
 
 //Node.js server that translates unreal commands
-const nodeServerIP = "localhost:8800";
+const nodeServerIP = "D26763:8800";
 
 //Amount of Unreal controlling widgets
 const numFloats = 23;
